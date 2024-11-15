@@ -9,7 +9,7 @@ import DashboardLayout from './layouts/dashboard-layout'
 
 // Import the components
 import IndexPage from './routes'
-import ContactPage from './routes/contact'
+import ContactPage from './routes/VideoRecorderWithLiveLocation'
 import SignInPage from './routes/sign-in'
 import SignUpPage from './routes/sign-up'
 import DashboardPage from './routes/dashboard'

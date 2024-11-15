@@ -1,5 +1,5 @@
 import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/clerk-react";
-
+import VideoRecorderWithLiveLocation from "./components/VideoRecorderWithLiveLocation.jsx";
 export default function App() {
   return (
     <header>
@@ -9,6 +9,7 @@ export default function App() {
       <SignedIn>
         <UserButton />
       </SignedIn>
+      <VideoRecorderWithLiveLocation></VideoRecorderWithLiveLocation>
     </header>
   );
 }
