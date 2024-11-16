@@ -2,7 +2,8 @@ import Web3 from "web3";
 import TenderBiddingABI from "./TenderBidding.json";
 
 const web3 = new Web3(Web3.givenProvider || "http://localhost:8545");
-const deployContract = async (adminName) => {
+
+const deployContract = async (adminName, options = {}) => {
   try {
     const accounts = await web3.eth.getAccounts();
     const contract = new web3.eth.Contract(TenderBiddingABI.abi);
@@ -14,8 +15,8 @@ const deployContract = async (adminName) => {
       })
       .send({
         from: accounts[0],
-        gas: 1500000,
-        gasPrice: "30000000000",
+        gas: options.gas || 1500000,
+        gasPrice: options.gasPrice || "30000000000",
       });
 
     return deployedContract.options.address;

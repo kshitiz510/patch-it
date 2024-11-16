@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import Web3 from "web3";
 import { Link } from "react-router-dom";
 import styles from "./Home.module.css";
 import "./Home.module.css";
@@ -12,9 +13,21 @@ const Home = () => {
   const [isRegistered, setIsRegistered] = useState(false);
   const [account, setAccount] = useState("");
 
+  useEffect(() => {
+    if (window.ethereum) {
+      window.web3 = new Web3(window.ethereum);
+    } else if (window.web3) {
+      window.web3 = new Web3(window.web3.currentProvider);
+    } else {
+      console.log(
+        "Non-Ethereum browser detected. You should consider trying MetaMask!"
+      );
+    }
+  }, []);
+
   const handleDeploy = async () => {
     try {
-      const address = await deployContract(adminName);
+      const address = await deployContract(adminName, { gas: 3000000 });
       setContractAddress(address);
       setContractAddressState(address);
     } catch (error) {
@@ -23,12 +36,24 @@ const Home = () => {
   };
 
   const registerBidder = async () => {
-    const accounts = await window.web3.eth.getAccounts();
-    setAccount(accounts[0]);
-    await contract.methods
-      .registerBidder(bidderName)
-      .send({ from: accounts[0] });
-    setIsRegistered(true);
+    try {
+      if (!contract) {
+        console.error("Contract is not initialized.");
+        return;
+      }
+      const accounts = await window.web3.eth.getAccounts();
+      if (accounts.length === 0) {
+        console.error("No accounts found. Please connect to MetaMask.");
+        return;
+      }
+      setAccount(accounts[0]);
+      await contract.methods
+        .registerBidder(bidderName)
+        .send({ from: accounts[0], gasPrice: "20000000000" }); // Specify gas price
+      setIsRegistered(true);
+    } catch (error) {
+      console.error("Error registering bidder:", error);
+    }
   };
 
   return (

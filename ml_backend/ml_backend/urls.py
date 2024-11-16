@@ -1,7 +1,7 @@
 """
 URL configuration for ml_backend project.
 
-The `urlpatterns` list routes URLs to views. For more information please see:
+The urlpatterns list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.1/topics/http/urls/
 Examples:
 Function views
@@ -16,7 +16,9 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from ml.views import index , ProcessVideoAPIView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('video-render/',ProcessVideoAPIView)
 ]
