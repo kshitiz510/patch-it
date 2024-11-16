@@ -25,3 +25,6 @@ dist-ssr
 *.njsproj
 
 Datasets/
+
+#pycache
+__pycache__/

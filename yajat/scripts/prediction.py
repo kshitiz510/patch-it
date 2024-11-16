@@ -14,4 +14,4 @@ for result in results:
     annotated_image = result.plot()  # Get the annotated image as a NumPy array
     plt.imshow(annotated_image)
     plt.axis('off')  # Hide axes
-    plt.show()
+    plt.show()  
