@@ -24,6 +24,20 @@ const Navbar = () => {
     };
 
     checkMetaMaskConnection();
+
+    if (window.ethereum) {
+      window.ethereum.on("accountsChanged", (accounts) => {
+        if (accounts.length === 0) {
+          setIsAuthenticated(false);
+        } else {
+          setIsAuthenticated(true);
+        }
+      });
+
+      window.ethereum.on("disconnect", () => {
+        setIsAuthenticated(false);
+      });
+    }
   }, []);
 
   const connectMetaMask = async () => {
@@ -38,7 +52,13 @@ const Navbar = () => {
         window.web3 = new Web3(window.ethereum);
         setIsAuthenticated(true);
       } catch (error) {
-        console.error("User denied account access or error occurred:", error);
+        if (error.code === 4001) {
+          // User rejected the request
+          console.error("User denied account access:", error);
+        } else {
+          console.error("Error connecting to MetaMask:", error);
+        }
+        setIsAuthenticated(false);
       } finally {
         setIsConnecting(false);
       }
@@ -108,7 +128,6 @@ const Navbar = () => {
         {/* Action Buttons */}
         <div className="flex gap-2">
           <button
-            
             onClick={connectMetaMask}
             className={`flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 ${
               isAuthenticated ? "bg-[#F4EFE6]" : "bg-[#6392d9]"

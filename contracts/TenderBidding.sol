@@ -23,6 +23,8 @@ contract TenderBidding {
     mapping(address => string) public bidderNames;
     mapping(address => bool) public admins;
 
+    address[] public registeredBidders; // Track all registered bidders
+
     mapping(address => string[]) public bidderTenders; // Track tenders a bidder has participated in
 
     modifier onlyAdmin() {
@@ -44,6 +46,7 @@ contract TenderBidding {
     function registerBidder(string memory _name) public {
         require(bytes(bidderNames[msg.sender]).length == 0, "Bidder already registered");
         bidderNames[msg.sender] = _name;
+        registeredBidders.push(msg.sender); // Add to registered bidders list
     }
 
     function createTender(string memory _latitude, string memory _longitude, uint256 _baseAmount) public onlyAdmin {
@@ -155,6 +158,20 @@ contract TenderBidding {
         }
 
         return (keys, winnerNames, amounts);
+    }
+
+    function listBidders() public view returns (address[] memory, string[] memory) {
+        uint256 bidderCount = registeredBidders.length;
+
+        address[] memory addresses = new address[](bidderCount);
+        string[] memory names = new string[](bidderCount);
+
+        for (uint256 i = 0; i < bidderCount; i++) {
+            addresses[i] = registeredBidders[i];
+            names[i] = bidderNames[registeredBidders[i]];
+        }
+
+        return (addresses, names);
     }
 
     event TenderCreated(string tenderKey, uint256 baseAmount);
