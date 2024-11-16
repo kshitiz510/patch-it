@@ -2,7 +2,7 @@
   "name": "pothole-detection-project",
   "private": true,
   "version": "0.0.0",
-  "type": "commonjs",
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -15,7 +15,6 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0",
-    "truffle": "^5.11.5",
     "web3": "^4.15.0"
   },
   "devDependencies": {

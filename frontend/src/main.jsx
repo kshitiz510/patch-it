@@ -1,24 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import contract from './contract';
+import React from "react";
+import { createRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import App from "./App";
+import "./index.css";
 
-function App() {
-  const [data, setData] = useState(null);
+const container = document.getElementById("root");
+const root = createRoot(container);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const result = await contract.methods.yourMethod().call();
-      setData(result);
-    };
-
-    fetchData();
-  }, []);
-
-  return (
-    <div className="App">
-      <h1>Smart Contract Data</h1>
-      {data && <p>{data}</p>}
-    </div>
-  );
-}
-
-export default App;
+root.render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
+);
