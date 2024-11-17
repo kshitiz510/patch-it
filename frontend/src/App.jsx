@@ -45,7 +45,7 @@ const App = () => {
         <Route
           path="/list-bidders"
           element={
-            <ProtectedRoute allowedRoles={["admin"]}>
+            <ProtectedRoute allowedRoles={["admin", "bidder"]}>
               <ListBidders />
             </ProtectedRoute>
           }
@@ -69,12 +69,12 @@ const App = () => {
         <Route
           path="/list-open-tenders"
           element={
-            <ProtectedRoute allowedRoles={["user", "admin"]}>
+            <ProtectedRoute allowedRoles={["admin", "bidder"]}>
               <ListOpenTenders />
             </ProtectedRoute>
           }
         />
-        <Route path="/admin-registration" element={<AdminRegistration />} />
+        <Route path="/deploy-contract" element={<AdminRegistration />} />
       </Routes>
     </>
   );

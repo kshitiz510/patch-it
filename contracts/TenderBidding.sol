@@ -160,18 +160,20 @@ contract TenderBidding {
         return (keys, winnerNames, amounts);
     }
 
-    function listBidders() public view returns (address[] memory, string[] memory) {
-        uint256 bidderCount = registeredBidders.length;
+    function listBidders(bytes32 tenderKey) public view returns (address[] memory, string[] memory, uint256[] memory) {
+        uint256 length = tenderBidderAddresses[tenderKey].length;
+        address[] memory addresses = new address[](length);
+        string[] memory names = new string[](length);
+        uint256[] memory bidAmounts = new uint256[](length);
 
-        address[] memory addresses = new address[](bidderCount);
-        string[] memory names = new string[](bidderCount);
-
-        for (uint256 i = 0; i < bidderCount; i++) {
-            addresses[i] = registeredBidders[i];
-            names[i] = bidderNames[registeredBidders[i]];
+        for (uint256 i = 0; i < length; i++) {
+            address bidderAddress = tenderBidderAddresses[tenderKey][i];
+            addresses[i] = bidderAddress;
+            names[i] = tenderBidders[tenderKey][bidderAddress].name;
+            bidAmounts[i] = tenderBidders[tenderKey][bidderAddress].bidAmount;
         }
 
-        return (addresses, names);
+        return (addresses, names, bidAmounts);
     }
 
     event TenderCreated(string tenderKey, uint256 baseAmount);

@@ -52,7 +52,7 @@ const createTender = async (latitude, longitude, baseAmount) => {
   });
 };
 
-const placeBid = async (tenderKey, amount) => {
+const placeBid = async (tenderKey, name, amount) => {
   if (!contract) {
     throw new Error("Contract is not initialized.");
   }
@@ -60,7 +60,7 @@ const placeBid = async (tenderKey, amount) => {
   if (accounts.length === 0) {
     throw new Error("No accounts found.");
   }
-  await contract.methods.placeBid(tenderKey, amount).send({
+  await contract.methods.placeBid(tenderKey, name, amount).send({
     from: accounts[0],
     gas: 3000000, // Adjust gas limit as needed
     gasPrice: await web3.eth.getGasPrice(), // Use legacy gas price

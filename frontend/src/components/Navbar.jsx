@@ -1,12 +1,20 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { Link, NavLink } from "react-router-dom";
 import Web3 from "web3";
+import { Web3Context } from "../context/Web3Context";
 
 const Navbar = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isConnecting, setIsConnecting] = useState(false);
   const [metaMaskId, setMetaMaskId] = useState("");
-  const [isHovered, setIsHovered] = useState(false);
+  const [isTenderHovered, setIsTenderHovered] = useState(false);
+  const [isMetaMaskHovered, setIsMetaMaskHovered] = useState(false);
+  const [isBidHovered, setIsBidHovered] = useState(false);
+  const { role } = useContext(Web3Context);
+
+  let tenderHoverTimeout;
+  let metaMaskHoverTimeout;
+  let bidHoverTimeout;
 
   useEffect(() => {
     const checkMetaMaskConnection = async (event) => {
@@ -69,6 +77,39 @@ const Navbar = () => {
     }
   };
 
+  const handleTenderMouseEnter = () => {
+    clearTimeout(tenderHoverTimeout);
+    setIsTenderHovered(true);
+  };
+
+  const handleTenderMouseLeave = () => {
+    tenderHoverTimeout = setTimeout(() => {
+      setIsTenderHovered(false);
+    }, 150);
+  };
+
+  const handleMetaMaskMouseEnter = () => {
+    clearTimeout(metaMaskHoverTimeout);
+    setIsMetaMaskHovered(true);
+  };
+
+  const handleMetaMaskMouseLeave = () => {
+    metaMaskHoverTimeout = setTimeout(() => {
+      setIsMetaMaskHovered(false);
+    }, 150);
+  };
+
+  const handleBidMouseEnter = () => {
+    clearTimeout(bidHoverTimeout);
+    setIsBidHovered(true);
+  };
+
+  const handleBidMouseLeave = () => {
+    bidHoverTimeout = setTimeout(() => {
+      setIsBidHovered(false);
+    }, 150);
+  };
+
   return (
     <header className="fixed top-0 left-0 w-full flex items-center justify-between whitespace-nowrap bg-[#67978b] px-10 py-3 shadow-lg z-50">
       <div className="flex items-center gap-4 text-[#1C160C]">
@@ -107,7 +148,7 @@ const Navbar = () => {
         }}
       >
         <div className="flex items-center gap-4 text-[#1C160C]">
-          <NavLink
+          {/* <NavLink
             to="/"
             className={({ isActive }) =>
               `px-4 py-2 text-base font-bold transition-colors duration-200 ${
@@ -118,7 +159,7 @@ const Navbar = () => {
             }
           >
             Home
-          </NavLink>
+          </NavLink> */}
           <NavLink
             to="/map"
             className={({ isActive }) =>
@@ -143,7 +184,79 @@ const Navbar = () => {
           >
             Community
           </NavLink>
-          <NavLink
+          {(role === "admin" || role === "bidder") && (
+            <div
+              className="relative group"
+              onMouseEnter={handleTenderMouseEnter}
+              onMouseLeave={handleTenderMouseLeave}
+            >
+              <div className="px-4 py-2 text-base font-bold transition-colors duration-200 text-[#1C160C] hover:text-[#52504d] cursor-pointer">
+                Tender
+              </div>
+              {isTenderHovered && (
+                <div className="absolute left-0 mt-8 w-48 p-2 bg-white border border-gray-300 rounded-xl shadow-lg">
+                  {role === "admin" && (
+                    <>
+                      <NavLink
+                        to="/create-tender"
+                        className="block px-4 py-2 hover:bg-gray-200 rounded-lg"
+                      >
+                        Create Tender
+                      </NavLink>
+                      <NavLink
+                        to="/close-tender"
+                        className="block px-4 py-2 hover:bg-gray-200 rounded-lg"
+                      >
+                        Close Tender
+                      </NavLink>
+                    </>
+                  )}
+                  <NavLink
+                    to="/list-open-tenders"
+                    className="block px-4 py-2 hover:bg-gray-200 rounded-lg"
+                  >
+                    List Open Tenders
+                  </NavLink>
+                </div>
+              )}
+            </div>
+          )}
+          {(role === "admin" || role === "bidder") && (
+            <div
+              className="relative group"
+              onMouseEnter={handleBidMouseEnter}
+              onMouseLeave={handleBidMouseLeave}
+            >
+              <div className="px-4 py-2 text-base font-bold transition-colors duration-200 text-[#1C160C] hover:text-[#52504d] cursor-pointer">
+                Bid
+              </div>
+              {isBidHovered && (
+                <div className="absolute left-0 mt-6 w-48 p-2 bg-white border border-gray-300 rounded-xl shadow-lg">
+                  <NavLink
+                    to="/list-bidders"
+                    className="block px-4 py-2 hover:bg-gray-200 rounded-lg"
+                  >
+                    List Bidders
+                  </NavLink>
+                  <NavLink
+                    to="/place-bid"
+                    className="block px-4 py-2 hover:bg-gray-200 rounded-lg"
+                  >
+                    Place Bid
+                  </NavLink>
+                </div>
+              )}
+            </div>
+          )}
+          {role === "admin" && (
+            <NavLink
+              to="/deploy-contract"
+              className="px-4 py-2 text-base font-bold transition-colors duration-200 text-[#1C160C] hover:text-[#52504d]"
+            >
+              Deploy Contract
+            </NavLink>
+          )}
+          {/* <NavLink
             to="/bid"
             className={({ isActive }) =>
               `px-4 py-2 text-base font-bold transition-colors duration-200 ${
@@ -154,15 +267,15 @@ const Navbar = () => {
             }
           >
             Bid
-          </NavLink>
+          </NavLink> */}
         </div>
 
         {/* Action Buttons */}
         <div className="flex gap-2">
           <button
             onClick={(event) => connectToMetaMask(event)}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
+            onMouseEnter={handleMetaMaskMouseEnter}
+            onMouseLeave={handleMetaMaskMouseLeave}
             className={`relative ${
               isAuthenticated ? "bg-[#e3c182]" : "bg-[#f1e8d8] px-5"
             } text-black gap-1 text-base font-bold leading-normal tracking-[0.015em] min-w-0 px-3 hover:bg-[#e3c182] transform transition-transform duration-200 hover:translate-y-0.5 group`}
@@ -180,7 +293,7 @@ const Navbar = () => {
               <>
                 <div
                   className={`absolute left-[-400px] top-[60px] p-2 bg-white border border-gray-300 rounded shadow-lg transition-opacity duration-300 ${
-                    isHovered ? "opacity-100" : "opacity-0"
+                    isMetaMaskHovered ? "opacity-100" : "opacity-0"
                   }`}
                   style={{ pointerEvents: "none" }}
                 >

@@ -12,11 +12,22 @@ export const Web3Provider = ({ children }) => {
   const userAddress = import.meta.env.VITE_USER_ADDRESS;
 
   useEffect(() => {
-    if (window.ethereum) {
-      window.ethereum.on("accountsChanged", (accounts) => {
-        setAccount(accounts[0]);
-      });
-    }
+    const loadWeb3 = async () => {
+      if (window.ethereum) {
+        window.web3 = new Web3(window.ethereum);
+        const accounts = await window.ethereum.request({ method: "eth_accounts" });
+        if (accounts.length > 0) {
+          setAccount(accounts[0]);
+        }
+        window.ethereum.on("accountsChanged", (accounts) => {
+          setAccount(accounts[0]);
+        });
+      } else {
+        console.log("Non-Ethereum browser detected. You should consider trying MetaMask!");
+      }
+    };
+
+    loadWeb3();
   }, []);
 
   useEffect(() => {
