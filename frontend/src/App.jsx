@@ -1,6 +1,6 @@
-import React from "react";
-import { Routes, Route } from "react-router-dom";
-import "./App.css";
+import React, { useContext } from "react";
+import { Route, Routes } from "react-router-dom";
+import { Web3Context } from "./context/Web3Context";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
 import Community from "./pages/Community";
@@ -12,8 +12,13 @@ import CreateTender from "./pages/CreateTender";
 import ListOpenTenders from "./pages/ListOpenTenders";
 import CloseTender from "./pages/CloseTender";
 import ListBidders from "./pages/ListBidders";
+import ProtectedRoute from "./components/ProtectedRoute";
 
-export default function App() {
+const App = () => {
+  const { role } = useContext(Web3Context);
+
+  console.log("Current Role:", role); // Debugging statement
+
   return (
     <>
       <Navbar />
@@ -21,15 +26,58 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/community" element={<Community />} />
         <Route path="/map" element={<Map />} />
-        <Route path="/bid" element={<PlaceBid />} />
+        <Route
+          path="/create-tender"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <CreateTender />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/close-tender"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <CloseTender />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/list-bidders"
+          element={
+            <ProtectedRoute allowedRoles={["admin"]}>
+              <ListBidders />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bidder-registration"
+          element={
+            <ProtectedRoute allowedRoles={["bidder", "admin"]}>
+              <BidderRegistration />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/place-bid"
+          element={
+            <ProtectedRoute allowedRoles={["bidder", "admin"]}>
+              <PlaceBid />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/list-open-tenders"
+          element={
+            <ProtectedRoute allowedRoles={["user", "admin"]}>
+              <ListOpenTenders />
+            </ProtectedRoute>
+          }
+        />
         <Route path="/admin-registration" element={<AdminRegistration />} />
-        <Route path="/bidder-registration" element={<BidderRegistration />} />
-        <Route path="/create-tender" element={<CreateTender />} />
-        <Route path="/place-bid" element={<PlaceBid />} />
-        <Route path="/list-open-tenders" element={<ListOpenTenders />} />
-        <Route path="/close-tender" element={<CloseTender />} />
-        <Route path="/list-bidders" element={<ListBidders />} />
       </Routes>
     </>
   );
-}
+};
+
+export default App;

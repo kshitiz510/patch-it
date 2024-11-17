@@ -24514,10 +24514,16 @@
       "links": {},
       "address": "0x53c21BB89124C4D0520F6C9367d94Bf87B807176",
       "transactionHash": "0x5a44899f053b36612a471be84153c7a03bef50c846ca7a23050d16131af97718"
+    },
+    "1731766734516": {
+      "events": {},
+      "links": {},
+      "address": "0x3153A6ea5D7242617AE7432fceE210bDbE7E8975",
+      "transactionHash": "0xce57fe8e95fa23b4e23e2ab953dcd3c6effc571a6095dfe5608de37eeb640a6e"
     }
   },
   "schemaVersion": "3.4.16",
-  "updatedAt": "2024-11-16T14:18:12.908Z",
+  "updatedAt": "2024-11-16T17:05:43.531Z",
   "devdoc": {
     "kind": "dev",
     "methods": {},

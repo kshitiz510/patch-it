@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.15.5",
+    "@metamask/detect-provider": "^2.0.0",
+    "dotenv": "^16.4.5",
     "jwt-decode": "^4.0.0",
     "leaflet": "^1.9.4",
     "leaflet.heat": "^0.2.0",
