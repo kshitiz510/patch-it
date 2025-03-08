@@ -29,3 +29,22 @@ Datasets/
 
 #pycache
 __pycache__/
+
+.env
+
+pytorch_env/
+pytorch_env\pyvenv.cfg
+
+
+outputVideo.mp4
+video.mp4
+*.mp4
+
+checkpoints/
+
+yajat/models/models.zip
+*.zip
+
+yajat/models/
+*.pt
+*.zip
