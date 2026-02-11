@@ -1,35 +1,26 @@
-import React from 'react';
-import './App.css';
-import Navbar from './components/Navbar';
-import Home from './pages/Home';
-import UploadLocation from '../src/components/UploadLoaction';
-import LocationList from '../src/components/LocationList';
-import HeatMap from './components/HeatMap';
+import React from "react";
+import { Routes, Route } from "react-router-dom";
+import "./App.css";
+import Navbar from "./components/Navbar";
+import Home from "./pages/Home";
+import MapPage from "./pages/MapPage";
+import ReportPage from "./pages/ReportPage";
+import BidPage from "./pages/BidPage";
+import CommunityPage from "./pages/CommunityPage";
+
 export default function App() {
-  const uniqueIdData = {
-    latitude: 37.7749,  // Example latitude
-    longitude: -122.4194  // Example longitude
-  };    
   return (
-    <>
+    <div className="min-h-screen bg-asphalt-950">
       <Navbar />
-      <Home />
-      <div>
-      <UploadLocation />
-      <LocationList />
+      <main>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/map" element={<MapPage />} />
+          <Route path="/report" element={<ReportPage />} />
+          <Route path="/bid" element={<BidPage />} />
+          <Route path="/community" element={<CommunityPage />} />
+        </Routes>
+      </main>
     </div>
-    <div>
-      <h1>Location Heatmap</h1>
-      <HeatMap />
-    </div>
-    <div>
-      <LiveLocation uniqueIdData={uniqueIdData} />
-    </div>
-
-
-
-
-
-    </>
   );
 }

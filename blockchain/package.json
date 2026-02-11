@@ -1,0 +1,14 @@
+{
+  "name": "patch-it-blockchain",
+  "version": "1.0.0",
+  "description": "Patch-It smart contracts for tender bidding",
+  "scripts": {
+    "compile": "truffle compile",
+    "migrate": "truffle migrate",
+    "migrate:dev": "truffle migrate --network development",
+    "test": "truffle test"
+  },
+  "dependencies": {
+    "truffle": "^5.11.5"
+  }
+}

@@ -1,50 +1,78 @@
+# ========================
+# Dependencies
+# ========================
 node_modules/
-.env
-env
+venv/
+.venv/
+pytorch_env/
 
+# ========================
+# Environment variables
+# ========================
+.env
+.env.local
+.env.production
+
+# ========================
 # Logs
-logs
+# ========================
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
 
-# Build directories
-dist
-dist-ssr
+# ========================
+# Build outputs
+# ========================
+dist/
+dist-ssr/
+build/contracts/
 *.local
 
-# Editor directories and files
+# ========================
+# Editor / OS
+# ========================
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
+skills/
 
-Datasets/
-
-#pycache
+# ========================
+# Python
+# ========================
 __pycache__/
+*.pyc
+*.pyo
+db.sqlite3
 
-.env
-
-pytorch_env/
-pytorch_env\pyvenv.cfg
-
-
-outputVideo.mp4
-video.mp4
-*.mp4
-
-checkpoints/
-
-yajat/models/models.zip
-*.zip
-
-yajat/models/
+# ========================
+# ML / Data (large files)
+# ========================
 *.pt
 *.zip
+*.mp4
+ml/models/
+ml/data/train/
+ml/data/val/
+ml/data/test/
+ml/data/raw/
+ml/data/processed/
+ml/media/
+checkpoints/
+
+# ========================
+# Blockchain build artifacts
+# ========================
+blockchain/build/
+
+# ========================
+# Uploads (user content)
+# ========================
+backend/uploads/videos/
