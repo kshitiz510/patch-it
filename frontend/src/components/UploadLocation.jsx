@@ -211,7 +211,7 @@ const UploadLocation = () => {
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              d="M12 2a1 1 0 011 1v2.07A8.002 8.002 0 0119.93 11H22a1 1 0 110 2h-2.07A8.002 8.002 0 0113 19.93V22a1 1 0 11-2 0v-2.07A8.002 8.002 0 014.07 13H2a1 1 0 110-2h2.07A8.002 8.002 0 0111 5.07V3a1 1 0 011-1zm0 5a5 5 0 100 10 5 5 0 000-10zm0 3a2 2 0 110 4 2 2 0 010-4z"
             />
           </svg>
           Use Current GPS Location

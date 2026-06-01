@@ -2,13 +2,26 @@
   "name": "patch-it-blockchain",
   "version": "1.0.0",
   "description": "Patch-It smart contracts for tender bidding",
+  "main": "index.js",
   "scripts": {
-    "compile": "truffle compile",
-    "migrate": "truffle migrate",
-    "migrate:dev": "truffle migrate --network development",
-    "test": "truffle test"
+    "compile": "hardhat compile",
+    "deploy": "hardhat run scripts/deploy.js",
+    "deploy:localhost": "hardhat run scripts/deploy.js --network localhost",
+    "deploy:sepolia": "hardhat run scripts/deploy.js --network sepolia",
+    "node": "hardhat node",
+    "test": "hardhat test",
+    "test:coverage": "hardhat coverage",
+    "clean": "hardhat clean",
+    "verify": "hardhat verify"
   },
-  "dependencies": {
-    "truffle": "^5.11.5"
-  }
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.1.0",
+    "@nomicfoundation/hardhat-ethers": "^3.0.5",
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.6",
+    "chai": "^4.3.10",
+    "hardhat": "^2.28.6",
+    "ethers": "^6.13.1",
+    "dotenv": "^16.4.5"
+  },
+  "dependencies": {}
 }

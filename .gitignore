@@ -43,6 +43,7 @@ Thumbs.db
 *.ntvs*
 *.njsproj
 skills/
+docs/
 
 # ========================
 # Python

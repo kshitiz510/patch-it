@@ -157,6 +157,14 @@ contract TenderBidding {
         return (keys, winnerNames, amounts);
     }
 
+    function getAllTenders() public view returns (string[] memory) {
+        return tenderKeys;
+    }
+
+    function getTender(string memory _tenderKey) public view tenderExists(_tenderKey) returns (Tender memory) {
+        return tenders[_tenderKey];
+    }
+
     event TenderCreated(string tenderKey, uint256 baseAmount);
     event TenderClosed(string tenderKey, address winner, uint256 lowestBid);
 }

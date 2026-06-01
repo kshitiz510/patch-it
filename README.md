@@ -5,7 +5,7 @@
 <p align="center">
   <strong>React + Vite + Tailwind</strong> &nbsp;·&nbsp;
   <strong>Express + MongoDB</strong> &nbsp;·&nbsp;
-  <strong>Solidity + Truffle</strong> &nbsp;·&nbsp;
+  <strong>Solidity + Hardhat</strong> &nbsp;·&nbsp;
   <strong>Django + YOLOv8</strong>
 </p>
 
@@ -39,8 +39,8 @@
          ▼                   ▼                   ▼
 ┌─────────────────┐ ┌────────────────┐ ┌────────────────────┐
 │  Backend (Node) │ │  ML (Django)   │ │ Blockchain (EVM)   │
-│  Express + Mongo│ │  YOLO + DRF    │ │ Solidity + Ganache │
-│  :4000          │ │  :8000         │ │ :8545              │
+│  Express + Mongo│ │  YOLO + DRF    │ │ Solidity + Hardhat │
+│  :4000          │ │  :8000         │ │ :8545 or :31337    │
 └────────┬────────┘ └────────────────┘ └────────────────────┘
          │
          ▼
@@ -54,15 +54,15 @@
 
 ## Prerequisites
 
-| Tool     | Version | Purpose                   |
-| -------- | ------- | ------------------------- |
-| Node.js  | ≥ 18    | Frontend + Backend        |
-| MongoDB  | ≥ 6     | Database                  |
-| Python   | ≥ 3.10  | ML service + training     |
-| MetaMask | latest  | Browser wallet (Ethereum) |
-| Ganache  | latest  | Local Ethereum blockchain |
-| Git      | ≥ 2.30  | Version control           |
-| CUDA     | ≥ 11.8  | GPU training (optional)   |
+| Tool     | Version | Purpose                         |
+| -------- | ------- | ------------------------------- |
+| Node.js  | ≥ 18    | Frontend + Backend + Blockchain |
+| MongoDB  | ≥ 6     | Database                        |
+| Python   | ≥ 3.10  | ML service + training           |
+| MetaMask | latest  | Browser wallet (Ethereum)       |
+| Hardhat  | v2.28+  | Local Ethereum blockchain       |
+| Git      | ≥ 2.30  | Version control                 |
+| CUDA     | ≥ 11.8  | GPU training (optional)         |
 
 ---
 
@@ -98,12 +98,16 @@ VITE_API_URL=http://localhost:4000
 ```bash
 cd blockchain
 npm install
-# Start Ganache GUI or CLI on port 8545, then:
-npx truffle migrate --network development
-npx truffle test
+
+# Start local Hardhat node (dev chain):
+npx hardhat node
+
+# In another terminal, deploy & test:
+npx hardhat test                          # Run tests
+npx hardhat run scripts/deploy.js         # Deploy to localhost
 ```
 
-> **Shortcut:** The frontend's Bid page can deploy the contract directly from the browser — just point MetaMask at your Ganache network (RPC `http://127.0.0.1:8545`, Chain ID `1337`).
+> **MetaMask Setup:** Point MetaMask to Hardhat's local chain (RPC `http://127.0.0.1:8545`, Chain ID `31337`). Import a Hardhat account's private key to test transactions.
 
 ### 4. ML Service (Django + YOLO)
 
@@ -317,10 +321,12 @@ Admin creates tender → Bidders register → Bidders place bids → Admin close
 
 ### Using the Bid Page
 
-1. Install MetaMask and connect to Ganache (`http://127.0.0.1:8545`, Chain ID `1337`)
-2. Import a Ganache account (copy private key from Ganache → Import in MetaMask)
-3. On the Bid page: **Connect Wallet → Deploy (or Load) → Register → Create/Bid**
-4. Contract address persists in localStorage across sessions
+1. Install MetaMask and connect to Hardhat localhost (`http://127.0.0.1:8545`, Chain ID `31337`)
+2. Import a Hardhat test account (copy private key from `npx hardhat node` output)
+3. Start Hardhat node: `cd blockchain && npx hardhat node`
+4. Deploy contract: `npx hardhat run scripts/deploy.js --network localhost`
+5. On the Bid page: **Connect Wallet → Deploy (or Load) → Register → Create/Bid**
+6. Contract address persists in localStorage across sessions
 
 ---
 
@@ -373,16 +379,16 @@ VITE_API_URL=http://localhost:4000
 
 ## Tech Stack
 
-| Layer          | Technology                       | Purpose                    |
-| -------------- | -------------------------------- | -------------------------- |
-| **Frontend**   | React 18, Vite 5, Tailwind CSS 3 | Single-page application    |
-| **Maps**       | Leaflet, leaflet.heat            | Interactive map + heatmap  |
-| **Blockchain** | Web3.js 4, Solidity 0.8, Truffle | Smart contract interaction |
-| **Backend**    | Express 4, Mongoose 8            | REST API server            |
-| **Database**   | MongoDB                          | Location & video storage   |
-| **ML**         | YOLOv8 (Ultralytics), PyTorch    | Object detection           |
-| **ML API**     | Django 5, DRF                    | Model serving              |
-| **Depth**      | Depth-Anything-V2, Transformers  | Pothole depth estimation   |
+| Layer          | Technology                          | Purpose                    |
+| -------------- | ----------------------------------- | -------------------------- |
+| **Frontend**   | React 18, Vite 5, Tailwind CSS 3    | Single-page application    |
+| **Maps**       | Leaflet, leaflet.heat               | Interactive map + heatmap  |
+| **Blockchain** | Web3.js 4, Solidity 0.8, Hardhat v2 | Smart contract interaction |
+| **Backend**    | Express 4, Mongoose 8               | REST API server            |
+| **Database**   | MongoDB                             | Location & video storage   |
+| **ML**         | YOLOv8 (Ultralytics), PyTorch       | Object detection           |
+| **ML API**     | Django 5, DRF                       | Model serving              |
+| **Depth**      | Depth-Anything-V2, Transformers     | Pothole depth estimation   |
 
 ---
 
@@ -411,9 +417,12 @@ patch-it/
 │   ├── contracts/
 │   │   ├── TenderBidding.sol     # Main bidding contract
 │   │   └── Migrations.sol
-│   ├── migrations/               # Truffle deploy scripts
-│   ├── test/                     # Mocha/Chai tests
-│   ├── truffle-config.js
+│   ├── scripts/
+│   │   └── deploy.js             # Hardhat deployment script
+│   ├── test/
+│   │   └── TenderBidding.test.js # Hardhat tests (Chai + ethers.js)
+│   ├── hardhat.config.js         # Hardhat configuration
+│   ├── .env.example              # Environment template
 │   └── package.json
 │
 ├── ml/                           # Machine Learning

@@ -68,7 +68,7 @@ const LiveLocation = () => {
         style={{ height: "500px", width: "100%" }}
         className="rounded-lg overflow-hidden"
       />
-      <p className="text-sm text-gray-500 mt-2 text-center">
+      <p className="text-sm text-road mt-2 text-center">
         Lat: {coords.lat.toFixed(4)}, Lng: {coords.lng.toFixed(4)}
       </p>
     </div>

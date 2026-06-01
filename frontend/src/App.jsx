@@ -19,6 +19,13 @@ export default function App() {
           <Route path="/report" element={<ReportPage />} />
           <Route path="/bid" element={<BidPage />} />
           <Route path="/community" element={<CommunityPage />} />
+          <Route path="*" element={
+            <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+              <h1 className="text-6xl font-display text-warn">404</h1>
+              <p className="text-road-light text-lg">Page not found</p>
+              <a href="/" className="btn-primary mt-4">Back to Home</a>
+            </div>
+          } />
         </Routes>
       </main>
     </div>

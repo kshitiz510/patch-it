@@ -137,7 +137,7 @@ const MapPage = () => {
   }, [locations, view]);
 
   return (
-    <div className="pt-16 h-screen flex flex-col bg-asphalt-950">
+    <div className="relative pt-16 h-screen flex flex-col bg-asphalt-950">
       {/* Floating controls overlay */}
       <div className="absolute top-20 left-4 z-[1000] space-y-3">
         {/* Info panel */}

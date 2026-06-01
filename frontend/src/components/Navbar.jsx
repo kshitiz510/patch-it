@@ -67,6 +67,8 @@ const Navbar = () => {
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
           className="md:hidden p-2 text-road-light hover:text-white transition"
+          aria-label="Toggle menu"
+          aria-expanded={mobileOpen}
         >
           <svg
             className="w-5 h-5"
