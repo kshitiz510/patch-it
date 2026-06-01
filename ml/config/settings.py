@@ -2,6 +2,7 @@
 Django settings for Patch-It ML service.
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -12,12 +13,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-!8ui+r0g2abti#)o4j_x&m#v)d=zfk2&$8ht!t&5y$f8a#_*ry'
+SECRET_KEY = os.getenv(
+    "DJANGO_SECRET_KEY",
+    "django-insecure-!8ui+r0g2abti#)o4j_x&m#v)d=zfk2&$8ht!t&5y$f8a#_*ry",
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv("DJANGO_DEBUG", "true").lower() == "true"
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    if host.strip()
+]
 
 
 # Application definition
@@ -120,6 +128,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # CORS
 CORS_ALLOW_ALL_ORIGINS = DEBUG
+if not DEBUG:
+    cors_origins = os.getenv("CORS_ALLOWED_ORIGINS", "")
+    if cors_origins:
+        CORS_ALLOWED_ORIGINS = [
+            origin.strip() for origin in cors_origins.split(",") if origin.strip()
+        ]
 
 # Media files (uploaded content)
 MEDIA_URL = '/media/'

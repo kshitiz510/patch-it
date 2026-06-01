@@ -7,6 +7,7 @@ import MapPage from "./pages/MapPage";
 import ReportPage from "./pages/ReportPage";
 import BidPage from "./pages/BidPage";
 import CommunityPage from "./pages/CommunityPage";
+import AuthPage from "./pages/AuthPage";
 
 export default function App() {
   return (
@@ -19,6 +20,7 @@ export default function App() {
           <Route path="/report" element={<ReportPage />} />
           <Route path="/bid" element={<BidPage />} />
           <Route path="/community" element={<CommunityPage />} />
+          <Route path="/auth" element={<AuthPage />} />
           <Route path="*" element={
             <div className="min-h-screen flex flex-col items-center justify-center gap-4">
               <h1 className="text-6xl font-display text-warn">404</h1>

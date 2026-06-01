@@ -38,6 +38,7 @@ const BidPage = () => {
   const [contractAddress, setContractAddress] = useState(
     () => localStorage.getItem("patchit_contract_address") || "",
   );
+  const [chainId, setChainId] = useState("");
   const [status, setStatus] = useState("");
   const [statusType, setStatusType] = useState("info"); // info | success | error
 
@@ -60,6 +61,24 @@ const BidPage = () => {
     if (type !== "error") setTimeout(() => setStatus(""), 5000);
   };
 
+  const supportedChainIds = new Set(["0x7a69", "0x539", "0xaa36a7"]);
+
+  const refreshChainId = async () => {
+    if (!window.ethereum) return;
+    const id = await window.ethereum.request({ method: "eth_chainId" });
+    setChainId(id);
+    if (!supportedChainIds.has(id)) {
+      showStatus("Unsupported network. Switch to localhost or Sepolia.", "error");
+    }
+  };
+
+  const disconnectWallet = () => {
+    setWeb3(null);
+    setAccount("");
+    setContract(null);
+    showStatus("Wallet disconnected", "info");
+  };
+
   // Connect wallet
   const connectWallet = async () => {
     if (!window.ethereum) {
@@ -72,6 +91,7 @@ const BidPage = () => {
       const accounts = await w3.eth.getAccounts();
       setWeb3(w3);
       setAccount(accounts[0]);
+      await refreshChainId();
       showStatus(`Wallet connected`, "success");
 
       if (contractAddress) {
@@ -207,6 +227,34 @@ const BidPage = () => {
     if (contract) fetchTenders();
   }, [contract]);
 
+  useEffect(() => {
+    if (!window.ethereum) return undefined;
+
+    const handleAccountsChanged = (accounts) => {
+      if (!accounts.length) {
+        disconnectWallet();
+        return;
+      }
+      setAccount(accounts[0]);
+      setContract(null);
+      showStatus("Account changed. Reload contract if needed.", "info");
+    };
+
+    const handleChainChanged = () => {
+      refreshChainId();
+      setContract(null);
+      showStatus("Network changed. Reload contract if needed.", "info");
+    };
+
+    window.ethereum.on("accountsChanged", handleAccountsChanged);
+    window.ethereum.on("chainChanged", handleChainChanged);
+
+    return () => {
+      window.ethereum.removeListener("accountsChanged", handleAccountsChanged);
+      window.ethereum.removeListener("chainChanged", handleChainChanged);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-asphalt-950">
       {/* Full-bleed header */}
@@ -275,14 +323,19 @@ const BidPage = () => {
               Wallet
             </p>
             {account ? (
-              <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between gap-3">
                 <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
                   <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs text-white font-mono truncate max-w-[180px]">{account}</p>
-                  <p className="text-[10px] text-road">MetaMask connected</p>
+                  <p className="text-[10px] text-road">
+                    MetaMask connected{chainId ? ` (${chainId})` : ""}
+                  </p>
                 </div>
+                <button onClick={disconnectWallet} className="btn-ghost text-[10px] px-3 py-1">
+                  Disconnect
+                </button>
               </div>
             ) : (
               <button onClick={connectWallet} className="btn-primary rounded-xl text-sm w-full">

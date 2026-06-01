@@ -3,15 +3,16 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
-const UploadLocation = () => {
+const UploadLocation = ({ onUploaded }) => {
   const [video, setVideo] = useState(null);
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
+  const [description, setDescription] = useState("");
   const [message, setMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
 
-  const validExts = ["mp4", "mov", "avi", "mkv"];
+  const validExts = ["mp4", "mov", "avi", "mkv", "jpg", "jpeg", "png", "webp"];
 
   const handleFile = (file) => {
     if (!file) return;
@@ -20,7 +21,7 @@ const UploadLocation = () => {
       setVideo(file);
       setMessage("");
     } else {
-      setMessage("Only .mp4, .mov, .avi, .mkv allowed");
+      setMessage("Only video or image files are allowed");
       setVideo(null);
     }
   };
@@ -36,14 +37,17 @@ const UploadLocation = () => {
   const handleUpload = async (e) => {
     e.preventDefault();
     if (!video || !latitude || !longitude) {
-      setMessage("Please fill all fields and select a video");
+      setMessage("Please fill coordinates and select a file");
       return;
     }
 
     const formData = new FormData();
-    formData.append("video", video);
+    formData.append("media", video);
     formData.append("lat", latitude);
     formData.append("lng", longitude);
+    if (description.trim()) {
+      formData.append("description", description.trim());
+    }
 
     setIsUploading(true);
     try {
@@ -54,9 +58,12 @@ const UploadLocation = () => {
       setVideo(null);
       setLatitude("");
       setLongitude("");
+      setDescription("");
+      onUploaded?.(response.data.location);
     } catch (error) {
       console.error("Upload failed:", error);
-      setMessage("Failed to upload. Please try again.");
+      const apiMessage = error?.response?.data?.error;
+      setMessage(apiMessage || "Failed to upload. Please try again.");
     } finally {
       setIsUploading(false);
     }
@@ -98,7 +105,7 @@ const UploadLocation = () => {
         </div>
         <div>
           <h2 className="text-lg font-semibold text-white">Upload Footage</h2>
-          <p className="text-xs text-road">MP4, MOV, AVI, MKV</p>
+          <p className="text-xs text-road">Video or image evidence</p>
         </div>
       </div>
 
@@ -121,7 +128,7 @@ const UploadLocation = () => {
           <input
             id="video-input"
             type="file"
-            accept="video/*"
+            accept="video/*,image/*"
             onChange={handleFileChange}
             className="hidden"
           />
@@ -193,6 +200,20 @@ const UploadLocation = () => {
               className="input text-sm"
             />
           </div>
+        </div>
+
+        {/* Description */}
+        <div>
+          <label className="block text-[11px] font-mono text-road tracking-[0.2em] uppercase mb-2">
+            Description (optional)
+          </label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Short note about the damage"
+            className="input text-sm min-h-[96px] resize-none"
+            maxLength={500}
+          />
         </div>
 
         {/* GPS button */}

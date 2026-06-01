@@ -122,10 +122,10 @@ Training with default settings (50 epochs, batch 16, 640px) takes:
 
 ```bash
 # Single image
-python scripts/predict.py --source path/to/image.jpg
+python scripts/predict.py --image path/to/image.jpg
 
 # Video file
-python scripts/video_inference.py --source path/to/road_video.mp4
+python scripts/video_inference.py --input path/to/road_video.mp4 --output data/output.mp4
 ```
 
 ## API Endpoints

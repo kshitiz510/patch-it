@@ -1,27 +1,104 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const LocationSchema = new mongoose.Schema({
-  latitude: {
-    type: Number,
-    required: true,
-    min: -90,
-    max: 90,
+const LocationSchema = new mongoose.Schema(
+  {
+    latitude: {
+      type: Number,
+      required: true,
+      min: -90,
+      max: 90,
+    },
+    longitude: {
+      type: Number,
+      required: true,
+      min: -180,
+      max: 180,
+    },
+    // GeoJSON point for geospatial queries (lng, lat)
+    location: {
+      type: {
+        type: String,
+        enum: ["Point"],
+        default: "Point",
+      },
+      coordinates: {
+        type: [Number],
+      },
+    },
+    videoPath: {
+      type: String,
+      default: "",
+    },
+    imagePath: {
+      type: String,
+      default: "",
+    },
+    mediaPath: {
+      type: String,
+      required: true,
+    },
+    mediaType: {
+      type: String,
+      enum: ["video", "image"],
+      required: true,
+    },
+    description: {
+      type: String,
+      default: "",
+      trim: true,
+      maxlength: 500,
+    },
+    severity: {
+      type: String,
+      enum: ["unknown", "low", "medium", "high"],
+      default: "unknown",
+    },
+    status: {
+      type: String,
+      enum: ["submitted", "verified", "in_review", "tendered", "repaired", "rejected"],
+      default: "submitted",
+    },
+    depth: {
+      type: Number,
+      default: null,
+      min: 0,
+    },
+    reporterName: {
+      type: String,
+      default: "",
+      trim: true,
+      maxlength: 80,
+    },
+    mlDetections: {
+      type: [
+        {
+          confidence: Number,
+          bbox: [Number],
+          class: String,
+          severity: String,
+        },
+      ],
+      default: [],
+    },
+    mlError: {
+      type: String,
+      default: "",
+    },
+    confirmed: {
+      type: Boolean,
+      default: false,
+    },
+    confirmCount: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
   },
-  longitude: {
-    type: Number,
-    required: true,
-    min: -180,
-    max: 180,
+  {
+    timestamps: true,
   },
-  videoPath: { // Field for video storage
-    type: String,
-    required: true,
-  },
-}, { 
-  timestamps: true,
-});
+);
 
-// Add a 2dsphere index for geospatial queries
-LocationSchema.index({ latitude: 1, longitude: 1 });
+LocationSchema.index({ location: "2dsphere" });
 
-module.exports = mongoose.model('Location', LocationSchema);
+module.exports = mongoose.model("Location", LocationSchema);

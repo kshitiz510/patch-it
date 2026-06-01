@@ -11,6 +11,7 @@ from ultralytics import YOLO
 
 ML_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_MODEL = ML_ROOT / "models" / "pothole_yolo" / "weights" / "best.pt"
+DEFAULT_OUTPUT = ML_ROOT / "data" / "output.mp4"
 
 
 def process_video(input_path: str, output_path: str, model_path: str = None):
@@ -49,8 +50,12 @@ def process_video(input_path: str, output_path: str, model_path: str = None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Video pothole detection")
-    parser.add_argument("--input", required=True, help="Path to input video")
-    parser.add_argument("--output", required=True, help="Path to output video")
+    parser.add_argument("--input", help="Path to input video")
+    parser.add_argument("--source", help="Alias for --input")
+    parser.add_argument("--output", default=str(DEFAULT_OUTPUT), help="Path to output video")
     parser.add_argument("--model", default=None, help="Path to YOLO weights")
     args = parser.parse_args()
-    process_video(args.input, args.output, args.model)
+    input_path = args.input or args.source
+    if not input_path:
+        parser.error("--input or --source is required")
+    process_video(input_path, args.output, args.model)

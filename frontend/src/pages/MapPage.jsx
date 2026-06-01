@@ -39,15 +39,24 @@ const MapPage = () => {
   const [locations, setLocations] = useState([]);
   const [view, setView] = useState("heat");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [locating, setLocating] = useState(false);
 
   useEffect(() => {
     const fetchLocations = async () => {
       try {
         const res = await fetch(`${API_URL}/locations`);
+        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
         const data = await res.json();
-        setLocations(data);
+        setLocations(
+          data.filter(
+            (loc) => Number.isFinite(Number(loc.latitude)) && Number.isFinite(Number(loc.longitude)),
+          ),
+        );
+        setError("");
       } catch (err) {
         console.error("Failed to fetch locations:", err);
+        setError("Failed to load map data.");
       } finally {
         setLoading(false);
       }
@@ -92,11 +101,15 @@ const MapPage = () => {
 
     if (locations.length === 0) return;
 
-    const bounds = L.latLngBounds(locations.map((loc) => [loc.latitude, loc.longitude]));
+    const bounds = L.latLngBounds(locations.map((loc) => [Number(loc.latitude), Number(loc.longitude)]));
     map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
 
     if (view === "heat" || view === "both") {
-      const heatData = locations.map((loc) => [loc.latitude, loc.longitude, loc.intensity || 0.7]);
+      const heatData = locations.map((loc) => [
+        Number(loc.latitude),
+        Number(loc.longitude),
+        loc.severity === "high" ? 1 : loc.severity === "medium" ? 0.75 : 0.55,
+      ]);
       const heat = L.heatLayer(heatData, {
         radius: 28,
         blur: 22,
@@ -122,19 +135,56 @@ const MapPage = () => {
       });
 
       locations.forEach((loc) => {
-        const marker = L.marker([loc.latitude, loc.longitude], { icon: amberIcon });
+        const mediaPath = loc.imagePath || loc.videoPath || loc.mediaPath;
+        const mediaHtml =
+          loc.mediaType === "image"
+            ? `<img alt="Road damage report" width="220" style="border-radius:8px;margin-top:4px" src="${API_URL}/${mediaPath}" />`
+            : mediaPath
+              ? `<video controls width="220" style="border-radius:8px;margin-top:4px" src="${API_URL}/${mediaPath}"></video>`
+              : "";
+        const marker = L.marker([Number(loc.latitude), Number(loc.longitude)], { icon: amberIcon });
         marker.bindPopup(
           `<div style="font-family:'DM Sans',sans-serif;font-size:13px;min-width:180px">
             <div style="font-weight:600;margin-bottom:6px;color:#fbbf24">Pothole Report</div>
-            <div style="color:#94a3b8;margin-bottom:2px">Lat: ${loc.latitude.toFixed(4)}</div>
-            <div style="color:#94a3b8;margin-bottom:8px">Lng: ${loc.longitude.toFixed(4)}</div>
-            ${loc.videoPath ? `<video controls width="220" style="border-radius:8px;margin-top:4px" src="${API_URL}/${loc.videoPath}"></video>` : ""}
+            <div style="color:#94a3b8;margin-bottom:2px">Lat: ${Number(loc.latitude).toFixed(4)}</div>
+            <div style="color:#94a3b8;margin-bottom:4px">Lng: ${Number(loc.longitude).toFixed(4)}</div>
+            <div style="color:#f59e0b;margin-bottom:8px">Status: ${loc.status || "submitted"}</div>
+            ${mediaHtml}
           </div>`,
         );
         markersLayerRef.current.addLayer(marker);
       });
     }
   }, [locations, view]);
+
+  const centerOnUser = () => {
+    if (!navigator.geolocation || !mapInstanceRef.current) {
+      setError("Browser location is not available.");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const latLng = [position.coords.latitude, position.coords.longitude];
+        L.circleMarker(latLng, {
+          radius: 8,
+          color: "#fbbf24",
+          fillColor: "#f59e0b",
+          fillOpacity: 0.7,
+        })
+          .addTo(mapInstanceRef.current)
+          .bindPopup("Your current location")
+          .openPopup();
+        mapInstanceRef.current.setView(latLng, 15);
+        setLocating(false);
+      },
+      (err) => {
+        setError(`Location failed: ${err.message}`);
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
+  };
 
   return (
     <div className="relative pt-16 h-screen flex flex-col bg-asphalt-950">
@@ -164,6 +214,8 @@ const MapPage = () => {
                 <span className="w-1.5 h-1.5 rounded-full bg-warn animate-pulse" />
                 Loading data...
               </span>
+            ) : error ? (
+              <span className="text-red-400 text-xs">{error}</span>
             ) : (
               <>
                 <span className="text-warn font-semibold">{locations.length}</span> report
@@ -198,6 +250,14 @@ const MapPage = () => {
             </button>
           ))}
         </div>
+
+        <button
+          type="button"
+          onClick={centerOnUser}
+          className="btn-secondary w-full rounded-xl text-xs bg-asphalt-800/90 backdrop-blur-sm"
+        >
+          {locating ? "Locating..." : "Use My Location"}
+        </button>
       </div>
 
       {/* Map container — fills remaining space */}

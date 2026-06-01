@@ -1,8 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import UploadLocation from "../components/UploadLocation";
 import LocationList from "../components/LocationList";
 
 const ReportPage = () => {
+  const [refreshKey, setRefreshKey] = useState(0);
+
   return (
     <div className="min-h-screen bg-asphalt-950">
       {/* Full-bleed header with topo texture */}
@@ -46,7 +48,7 @@ const ReportPage = () => {
           {/* Upload — left column, sticky on desktop */}
           <div className="lg:col-span-5">
             <div className="lg:sticky lg:top-24">
-              <UploadLocation />
+              <UploadLocation onUploaded={() => setRefreshKey((key) => key + 1)} />
             </div>
           </div>
 
@@ -57,7 +59,7 @@ const ReportPage = () => {
 
           {/* Reports — right column, scrollable */}
           <div className="lg:col-span-6">
-            <LocationList />
+            <LocationList refreshKey={refreshKey} />
           </div>
         </div>
       </div>

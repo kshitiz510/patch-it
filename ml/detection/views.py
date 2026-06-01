@@ -1,6 +1,7 @@
 """Detection API views."""
 
 from pathlib import Path
+import uuid
 
 from django.conf import settings
 from rest_framework.decorators import api_view, parser_classes
@@ -34,6 +35,9 @@ def detect_pothole(request):
     if not image_file:
         return Response({"error": "No image provided"}, status=400)
 
+    if image_file.content_type and not image_file.content_type.startswith("image/"):
+        return Response({"error": "Invalid image type"}, status=400)
+
     if not DEFAULT_MODEL.exists():
         return Response(
             {"error": "Model weights not found. Train the model first (see ml/scripts/train.py)."},
@@ -43,7 +47,8 @@ def detect_pothole(request):
     # Save temp file
     media_dir = Path(settings.MEDIA_ROOT) / "temp"
     media_dir.mkdir(parents=True, exist_ok=True)
-    temp_path = media_dir / image_file.name
+    suffix = Path(image_file.name).suffix or ".jpg"
+    temp_path = media_dir / f"{uuid.uuid4().hex}{suffix}"
 
     with open(temp_path, "wb") as f:
         for chunk in image_file.chunks():

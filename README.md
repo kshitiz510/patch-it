@@ -348,8 +348,18 @@ Admin creates tender → Bidders register → Bidders place bids → Admin close
 
 | Method | Route        | Body                                    | Description                    |
 | ------ | ------------ | --------------------------------------- | ------------------------------ |
-| POST   | `/upload`    | `multipart/form-data` (video, lat, lng) | Upload video + GPS coordinates |
-| GET    | `/locations` | —                                       | List all reported locations    |
+| GET    | `/health`                    | —                                                | API/database health check                  |
+| POST   | `/auth/register`             | `{ name, email, password }`                      | Register a citizen account                 |
+| POST   | `/auth/login`                | `{ email, password }`                            | Login and receive a signed token           |
+| GET    | `/auth/me`                   | `Authorization: Bearer <token>`                  | Validate current session                   |
+| POST   | `/upload`                    | `multipart/form-data` (`media`, `lat`, `lng`)    | Upload video/image evidence + GPS          |
+| GET    | `/locations`                 | Optional `?status=submitted`                     | List reported locations                    |
+| PATCH  | `/locations/:id/status`      | `{ status }`                                     | Update report workflow status              |
+| POST   | `/locations/:id/confirm`     | —                                                | Confirm/upvote a report                    |
+| GET    | `/community/posts`           | —                                                | List community posts                       |
+| POST   | `/community/posts`           | `{ author, body, locationId? }`                  | Create a community post                    |
+| POST   | `/community/posts/:id/like`  | —                                                | Like a post                                |
+| POST   | `/community/posts/:id/comments` | `{ author, body }`                            | Comment on a post                          |
 
 ### ML Service (port 8000)
 
@@ -367,6 +377,8 @@ Admin creates tender → Bidders register → Bidders place bids → Admin close
 ```env
 PORT=4000
 MONGO_URI=mongodb://localhost:27017/patchit
+AUTH_SECRET=change-me
+ML_API_URL=http://localhost:8000
 ```
 
 ### `frontend/.env`

@@ -32,7 +32,11 @@ def predict(image_path: str, model_path: str = None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Pothole detection inference")
-    parser.add_argument("--image", required=True, help="Path to input image")
+        parser.add_argument("--image", help="Path to input image")
+        parser.add_argument("--source", help="Alias for --image")
     parser.add_argument("--model", default=None, help="Path to YOLO weights")
     args = parser.parse_args()
-    predict(args.image, args.model)
+        image_path = args.image or args.source
+        if not image_path:
+                parser.error("--image or --source is required")
+        predict(image_path, args.model)

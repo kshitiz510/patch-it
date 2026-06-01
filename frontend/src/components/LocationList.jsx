@@ -3,24 +3,38 @@ import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
 
-const LocationList = () => {
+const LocationList = ({ refreshKey = 0 }) => {
   const [locations, setLocations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    const fetchLocations = async () => {
+  const fetchLocations = async () => {
       try {
         const response = await axios.get(`${API_URL}/locations`);
         setLocations(response.data);
+        setError("");
       } catch (error) {
         console.error("Failed to fetch locations", error);
+        setError("Failed to load reports. Please try again.");
       } finally {
         setLoading(false);
       }
     };
 
+  const confirmReport = async (id) => {
+    try {
+      const response = await axios.post(`${API_URL}/locations/${id}/confirm`);
+      setLocations((current) => current.map((loc) => (loc._id === id ? response.data : loc)));
+    } catch (error) {
+      console.error("Failed to confirm report", error);
+      setError("Failed to confirm report. Please try again.");
+    }
+  };
+
+  useEffect(() => {
+    setLoading(true);
     fetchLocations();
-  }, []);
+  }, [refreshKey]);
 
   return (
     <div>
@@ -52,7 +66,26 @@ const LocationList = () => {
         </div>
       </div>
 
-      {loading ? (
+      {error ? (
+        <div className="py-16 text-center border border-dashed border-asphalt-700 rounded-2xl">
+          <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-asphalt-800 flex items-center justify-center">
+            <svg
+              className="w-6 h-6 text-red-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+              />
+            </svg>
+          </div>
+          <p className="text-road text-sm">{error}</p>
+        </div>
+      ) : loading ? (
         <div className="py-16 flex justify-center">
           <div className="w-8 h-8 border-2 border-asphalt-600 border-t-warn rounded-full animate-spin" />
         </div>
@@ -94,12 +127,18 @@ const LocationList = () => {
                 </span>
               </div>
 
-              {/* Video thumbnail */}
-              {location.videoPath ? (
+              {/* Media thumbnail */}
+              {location.mediaType === "image" && (location.imagePath || location.mediaPath) ? (
+                <img
+                  className="w-28 h-20 object-cover rounded-lg bg-asphalt-900 flex-shrink-0"
+                  src={`${API_URL}/${location.imagePath || location.mediaPath}`}
+                  alt="Road damage report"
+                />
+              ) : location.videoPath || location.mediaPath ? (
                 <video
                   controls
                   className="w-28 h-20 object-cover rounded-lg bg-asphalt-900 flex-shrink-0"
-                  src={`${API_URL}/${location.videoPath}`}
+                  src={`${API_URL}/${location.videoPath || location.mediaPath}`}
                 />
               ) : (
                 <div className="w-28 h-20 rounded-lg bg-asphalt-900 flex items-center justify-center flex-shrink-0">
@@ -135,27 +174,43 @@ const LocationList = () => {
                     })}
                   </p>
                 )}
-                <a
-                  href={`https://www.google.com/maps?q=${location.latitude},${location.longitude}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 mt-2 text-xs text-warn/70 hover:text-warn font-medium transition"
-                >
-                  View on Maps
-                  <svg
-                    className="w-3 h-3"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    strokeWidth={2}
+                {location.description && (
+                  <p className="text-xs text-road mt-1 break-words">{location.description}</p>
+                )}
+                <div className="flex flex-wrap items-center gap-3 mt-2">
+                  <span className="badge badge-warn text-[10px]">{location.status || "submitted"}</span>
+                  {location.severity && location.severity !== "unknown" && (
+                    <span className="badge badge-red text-[10px]">{location.severity}</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => confirmReport(location._id)}
+                    className="text-xs text-road hover:text-warn transition"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                    />
-                  </svg>
-                </a>
+                    Confirm ({location.confirmCount || 0})
+                  </button>
+                  <a
+                    href={`https://www.google.com/maps?q=${location.latitude},${location.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-warn/70 hover:text-warn font-medium transition"
+                  >
+                    View on Maps
+                    <svg
+                      className="w-3 h-3"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
+                      />
+                    </svg>
+                  </a>
+                </div>
               </div>
             </div>
           ))}

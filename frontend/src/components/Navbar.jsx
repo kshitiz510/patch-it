@@ -7,6 +7,7 @@ const navLinks = [
   { to: "/report", label: "Report" },
   { to: "/community", label: "Community" },
   { to: "/bid", label: "Bid" },
+  { to: "/auth", label: "Login" },
 ];
 
 const Navbar = () => {
