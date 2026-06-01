@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+import { API_URL, api, getStoredAuth } from "../api";
 
 const CommunityPage = () => {
   const [locations, setLocations] = useState([]);
@@ -14,13 +12,14 @@ const CommunityPage = () => {
   const [postBody, setPostBody] = useState("");
   const [author, setAuthor] = useState("");
   const [commentDrafts, setCommentDrafts] = useState({});
+  const isAuthed = Boolean(getStoredAuth().accessToken);
 
   useEffect(() => {
     const load = async () => {
       try {
         const [locationRes, postRes] = await Promise.all([
-          axios.get(`${API_URL}/locations`),
-          axios.get(`${API_URL}/community/posts`),
+          api.get(`/locations`),
+          isAuthed ? api.get(`/community/posts`) : Promise.resolve({ data: [] }),
         ]);
         setLocations(locationRes.data);
         setPosts(postRes.data);
@@ -49,8 +48,12 @@ const CommunityPage = () => {
   const createPost = async (e) => {
     e.preventDefault();
     if (!postBody.trim()) return;
+    if (!isAuthed) {
+      setError("Please login to post in the community.");
+      return;
+    }
     try {
-      const res = await axios.post(`${API_URL}/community/posts`, {
+      const res = await api.post(`/community/posts`, {
         author: author.trim() || "Citizen",
         body: postBody.trim(),
       });
@@ -64,7 +67,7 @@ const CommunityPage = () => {
 
   const likePost = async (id) => {
     try {
-      const res = await axios.post(`${API_URL}/community/posts/${id}/like`);
+      const res = await api.post(`/community/posts/${id}/like`);
       setPosts((current) => current.map((post) => (post._id === id ? res.data : post)));
     } catch (err) {
       console.error("Failed to like post:", err);
@@ -75,7 +78,7 @@ const CommunityPage = () => {
     const body = commentDrafts[id]?.trim();
     if (!body) return;
     try {
-      const res = await axios.post(`${API_URL}/community/posts/${id}/comments`, {
+      const res = await api.post(`/community/posts/${id}/comments`, {
         author: author.trim() || "Citizen",
         body,
       });
@@ -98,6 +101,12 @@ const CommunityPage = () => {
             contributes to safer roads.
           </p>
         </div>
+
+        {!isAuthed && (
+          <div className="card p-5 mb-8 text-sm text-road-light">
+            Login is required for posting, liking, and commenting. Public reports remain visible.
+          </div>
+        )}
 
         {/* Composer */}
         <form onSubmit={createPost} className="card p-5 mb-8">

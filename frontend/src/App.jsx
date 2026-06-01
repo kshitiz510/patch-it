@@ -1,5 +1,5 @@
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Navigate, Routes, Route } from "react-router-dom";
 import "./App.css";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
@@ -8,6 +8,12 @@ import ReportPage from "./pages/ReportPage";
 import BidPage from "./pages/BidPage";
 import CommunityPage from "./pages/CommunityPage";
 import AuthPage from "./pages/AuthPage";
+import { getStoredAuth } from "./api";
+
+const ProtectedRoute = ({ children }) => {
+  if (!getStoredAuth().accessToken) return <Navigate to="/auth" replace />;
+  return children;
+};
 
 export default function App() {
   return (
@@ -17,9 +23,9 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/map" element={<MapPage />} />
-          <Route path="/report" element={<ReportPage />} />
-          <Route path="/bid" element={<BidPage />} />
-          <Route path="/community" element={<CommunityPage />} />
+          <Route path="/report" element={<ProtectedRoute><ReportPage /></ProtectedRoute>} />
+          <Route path="/bid" element={<ProtectedRoute><BidPage /></ProtectedRoute>} />
+          <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="*" element={
             <div className="min-h-screen flex flex-col items-center justify-center gap-4">

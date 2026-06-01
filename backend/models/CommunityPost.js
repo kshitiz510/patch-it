@@ -8,6 +8,11 @@ const CommentSchema = new mongoose.Schema(
       trim: true,
       maxlength: 80,
     },
+    authorUser: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
     body: {
       type: String,
       required: true,
@@ -17,6 +22,10 @@ const CommentSchema = new mongoose.Schema(
     createdAt: {
       type: Date,
       default: Date.now,
+    },
+    parentId: {
+      type: String,
+      default: "",
     },
   },
   { _id: true },
@@ -29,6 +38,11 @@ const CommunityPostSchema = new mongoose.Schema(
       default: "Citizen",
       trim: true,
       maxlength: 80,
+    },
+    authorUser: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
     },
     body: {
       type: String,

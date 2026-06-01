@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+import { API_URL, api } from "../api";
 
 const LocationList = ({ refreshKey = 0 }) => {
   const [locations, setLocations] = useState([]);
@@ -10,7 +8,7 @@ const LocationList = ({ refreshKey = 0 }) => {
 
   const fetchLocations = async () => {
       try {
-        const response = await axios.get(`${API_URL}/locations`);
+        const response = await api.get(`/locations`);
         setLocations(response.data);
         setError("");
       } catch (error) {
@@ -23,7 +21,7 @@ const LocationList = ({ refreshKey = 0 }) => {
 
   const confirmReport = async (id) => {
     try {
-      const response = await axios.post(`${API_URL}/locations/${id}/confirm`);
+      const response = await api.post(`/locations/${id}/confirm`);
       setLocations((current) => current.map((loc) => (loc._id === id ? response.data : loc)));
     } catch (error) {
       console.error("Failed to confirm report", error);

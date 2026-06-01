@@ -1,7 +1,5 @@
 import React, { useState } from "react";
-import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+import { api, getStoredAuth } from "../api";
 
 const UploadLocation = ({ onUploaded }) => {
   const [video, setVideo] = useState(null);
@@ -36,6 +34,10 @@ const UploadLocation = ({ onUploaded }) => {
 
   const handleUpload = async (e) => {
     e.preventDefault();
+    if (!getStoredAuth().accessToken) {
+      setMessage("Please login before submitting a report");
+      return;
+    }
     if (!video || !latitude || !longitude) {
       setMessage("Please fill coordinates and select a file");
       return;
@@ -51,7 +53,7 @@ const UploadLocation = ({ onUploaded }) => {
 
     setIsUploading(true);
     try {
-      const response = await axios.post(`${API_URL}/upload`, formData, {
+      const response = await api.post(`/upload`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setMessage(response.data.message || "Upload successful!");

@@ -69,6 +69,11 @@ const LocationSchema = new mongoose.Schema(
       trim: true,
       maxlength: 80,
     },
+    reporter: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
     mlDetections: {
       type: [
         {
@@ -83,6 +88,33 @@ const LocationSchema = new mongoose.Schema(
     mlError: {
       type: String,
       default: "",
+    },
+    credibilityScore: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100,
+    },
+    duplicateReportIds: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "Location",
+      default: [],
+    },
+    estimatedArea: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    estimatedCost: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    confidence: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 1,
     },
     confirmed: {
       type: Boolean,

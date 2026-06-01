@@ -7,5 +7,6 @@ app_name = 'detection'
 
 urlpatterns = [
     path('detect/', views.detect_pothole, name='detect'),
+    path('validate-bid/', views.validate_bid, name='validate_bid'),
     path('health/', views.health_check, name='health'),
 ]

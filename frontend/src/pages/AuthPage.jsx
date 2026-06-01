@@ -1,13 +1,12 @@
 import React, { useState } from "react";
-import axios from "axios";
-
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000";
+import { api, clearAuth, storeAuth } from "../api";
 
 const AuthPage = () => {
   const [mode, setMode] = useState("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [role, setRole] = useState("citizen");
   const [message, setMessage] = useState("");
   const [user, setUser] = useState(() => {
     const stored = localStorage.getItem("patchit_user");
@@ -19,13 +18,13 @@ const AuthPage = () => {
     setMessage("");
     try {
       const endpoint = mode === "register" ? "register" : "login";
-      const response = await axios.post(`${API_URL}/auth/${endpoint}`, {
+      const response = await api.post(`/auth/${endpoint}`, {
         name,
         email,
         password,
+        role,
       });
-      localStorage.setItem("patchit_token", response.data.token);
-      localStorage.setItem("patchit_user", JSON.stringify(response.data.user));
+      storeAuth(response.data);
       setUser(response.data.user);
       setMessage(mode === "register" ? "Account created" : "Signed in");
     } catch (err) {
@@ -34,8 +33,7 @@ const AuthPage = () => {
   };
 
   const logout = () => {
-    localStorage.removeItem("patchit_token");
-    localStorage.removeItem("patchit_user");
+    clearAuth();
     setUser(null);
     setMessage("Signed out");
   };
@@ -82,13 +80,20 @@ const AuthPage = () => {
               </button>
             </div>
             {mode === "register" && (
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Name"
-                className="input"
-                required
-              />
+              <>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Name"
+                  className="input"
+                  required
+                />
+                <select value={role} onChange={(e) => setRole(e.target.value)} className="input">
+                  <option value="citizen">Citizen</option>
+                  <option value="contractor">Contractor</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </>
             )}
             <input
               value={email}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Web3 from "web3";
 import TenderBiddingABI from "../blockchain/TenderBidding.json";
+import { api, getStoredAuth } from "../api";
 
 /* ── Reusable section wrapper ── */
 const Section = ({ icon, title, children, badge, variant = "default" }) => {
@@ -54,6 +55,9 @@ const BidPage = () => {
   const [openTenders, setOpenTenders] = useState([]);
   const [closedTenders, setClosedTenders] = useState([]);
   const [activeTab, setActiveTab] = useState("open");
+  const [marketReports, setMarketReports] = useState([]);
+  const [selectedReportId, setSelectedReportId] = useState("");
+  const currentUser = getStoredAuth().user;
 
   const showStatus = (msg, type = "info") => {
     setStatus(msg);
@@ -119,7 +123,6 @@ const BidPage = () => {
       setContract(deployed);
       localStorage.setItem("patchit_contract_address", addr);
 
-      await deployed.methods.createAdmin(adminName).send({ from: account });
       showStatus(`Contract deployed & admin registered`, "success");
     } catch (err) {
       showStatus("Deploy failed: " + err.message, "error");
@@ -142,7 +145,8 @@ const BidPage = () => {
     if (!bidderName.trim()) return showStatus("Enter your name.", "error");
     showStatus("Registering...");
     try {
-      await contract.methods.registerBidder(bidderName).send({ from: account });
+      await contract.methods.registerContractor().send({ from: account });
+      await api.post("/wallets", { walletAddress: account });
       showStatus(`Registered as ${bidderName}`, "success");
     } catch (err) {
       showStatus("Registration failed: " + err.message, "error");
@@ -152,14 +156,21 @@ const BidPage = () => {
   // Create tender
   const handleCreateTender = async () => {
     if (!contract || !account) return showStatus("Deploy or load a contract first.", "error");
-    if (!tenderLat || !tenderLng || !tenderBudget)
-      return showStatus("Fill all tender fields.", "error");
-    showStatus("Creating tender...");
+    const selectedReport = marketReports.find((report) => report._id === selectedReportId);
+    if (!selectedReport && (!tenderLat || !tenderLng || !tenderBudget))
+      return showStatus("Select a verified report or fill manual project fields.", "error");
+    showStatus("Creating on-chain project...");
     try {
+      const reportId = selectedReport?._id || `${tenderLat}_${tenderLng}`;
+      const locationKey = selectedReport
+        ? `${selectedReport.latitude}_${selectedReport.longitude}`
+        : `${tenderLat}_${tenderLng}`;
+      const estimate = selectedReport?.estimatedCost || parseInt(tenderBudget);
       await contract.methods
-        .createTender(tenderLat, tenderLng, parseInt(tenderBudget))
+        .createProject(reportId, locationKey, estimate)
         .send({ from: account });
-      showStatus("Tender created!", "success");
+      if (selectedReport) await api.post(`/reports/${selectedReport._id}/open-bidding`);
+      showStatus("Project created!", "success");
       setTenderLat("");
       setTenderLng("");
       setTenderBudget("");
@@ -172,10 +183,19 @@ const BidPage = () => {
   // Place bid
   const handlePlaceBid = async () => {
     if (!contract || !account) return showStatus("Deploy or load a contract first.", "error");
-    if (!bidTenderKey || !bidAmount) return showStatus("Fill tender key and bid amount.", "error");
+    if (!bidTenderKey || !bidAmount) return showStatus("Fill report id and bid amount.", "error");
     showStatus("Placing bid...");
     try {
-      await contract.methods.placeBid(bidTenderKey, parseInt(bidAmount)).send({ from: account });
+      const backendBid = await api.post("/bids", {
+        reportId: bidTenderKey,
+        walletAddress: account,
+        amount: Number(bidAmount),
+        timelineDays: 14,
+      });
+      const projectKey = web3.utils.keccak256(bidTenderKey);
+      await contract.methods
+        .submitBid(projectKey, parseInt(bidAmount), backendBid.data.rankingScore, `patchit://bids/${backendBid.data._id}`)
+        .send({ from: account });
       showStatus("Bid placed!", "success");
       setBidAmount("");
     } catch (err) {
@@ -186,11 +206,13 @@ const BidPage = () => {
   // Close tender (admin)
   const handleCloseTender = async () => {
     if (!contract || !account) return showStatus("Deploy or load a contract first.", "error");
-    if (!closeTenderKey) return showStatus("Select a tender to close.", "error");
-    showStatus("Closing tender...");
+    if (!closeTenderKey) return showStatus("Select a project/report to allocate.", "error");
+    showStatus("Allocating winner...");
     try {
-      await contract.methods.closeTender(closeTenderKey).send({ from: account });
-      showStatus("Tender closed! Winner selected.", "success");
+      const allocation = await api.post("/contracts/select-winner", { reportId: closeTenderKey });
+      const projectKey = web3.utils.keccak256(closeTenderKey);
+      await contract.methods.selectWinner(projectKey, allocation.data.winningBid.walletAddress).send({ from: account });
+      showStatus("Winner selected.", "success");
       setCloseTenderKey("");
       fetchTenders();
     } catch (err) {
@@ -202,22 +224,9 @@ const BidPage = () => {
   const fetchTenders = async () => {
     if (!contract) return;
     try {
-      const openResult = await contract.methods.listOpenTenders().call();
-      const openKeys = openResult[0] || [];
-      const openAmounts = openResult[1] || [];
-      setOpenTenders(openKeys.map((key, i) => ({ key, baseAmount: openAmounts[i]?.toString() })));
-
-      const closedResult = await contract.methods.listClosedTenders().call();
-      const closedKeys = closedResult[0] || [];
-      const closedWinners = closedResult[1] || [];
-      const closedAmounts = closedResult[2] || [];
-      setClosedTenders(
-        closedKeys.map((key, i) => ({
-          key,
-          winner: closedWinners[i],
-          lowestBid: closedAmounts[i]?.toString(),
-        })),
-      );
+      const keys = await contract.methods.listProjects().call();
+      setOpenTenders(keys.map((key) => ({ key, baseAmount: "on-chain project" })));
+      setClosedTenders([]);
     } catch (err) {
       console.error("Fetch tenders failed:", err);
     }
@@ -226,6 +235,18 @@ const BidPage = () => {
   useEffect(() => {
     if (contract) fetchTenders();
   }, [contract]);
+
+  useEffect(() => {
+    const loadMarketplace = async () => {
+      try {
+        const res = await api.get(currentUser?.role === "admin" ? "/reports?status=verified" : "/marketplace/reports");
+        setMarketReports(res.data);
+      } catch (err) {
+        console.warn("Marketplace load failed:", err.response?.data?.error || err.message);
+      }
+    };
+    loadMarketplace();
+  }, [currentUser?.role]);
 
   useEffect(() => {
     if (!window.ethereum) return undefined;
@@ -388,6 +409,35 @@ const BidPage = () => {
         {/* Divider */}
         <div className="h-px bg-gradient-to-r from-transparent via-asphalt-700/60 to-transparent mb-8" />
 
+        {marketReports.length > 0 && (
+          <div className="mb-8">
+            <p className="text-[10px] font-mono text-road tracking-[0.2em] uppercase mb-3">
+              Marketplace Reports
+            </p>
+            <div className="grid md:grid-cols-2 gap-3">
+              {marketReports.slice(0, 4).map((report) => (
+                <button
+                  type="button"
+                  key={report._id}
+                  onClick={() => {
+                    setBidTenderKey(report._id);
+                    setSelectedReportId(report._id);
+                  }}
+                  className="text-left border border-asphalt-700 hover:border-warn/40 rounded-xl p-4 transition"
+                >
+                  <p className="text-xs font-mono text-white truncate">{report._id}</p>
+                  <p className="text-xs text-road mt-1">
+                    {Number(report.latitude).toFixed(4)}, {Number(report.longitude).toFixed(4)}
+                  </p>
+                  <p className="text-xs text-warn mt-2">
+                    {report.severity || "unknown"} · Rs {report.estimatedCost || 0}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ── Actions Grid: 3 columns, varied treatments ── */}
         <div className="grid md:grid-cols-3 gap-6 mb-10">
           {/* Register */}
@@ -421,6 +471,20 @@ const BidPage = () => {
             variant="accent"
           >
             <div className="space-y-3">
+              {currentUser?.role === "admin" && marketReports.length > 0 && (
+                <select
+                  value={selectedReportId}
+                  onChange={(e) => setSelectedReportId(e.target.value)}
+                  className="input text-sm cursor-pointer"
+                >
+                  <option value="">Select verified report...</option>
+                  {marketReports.map((report) => (
+                    <option key={report._id} value={report._id}>
+                      {Number(report.latitude).toFixed(4)}, {Number(report.longitude).toFixed(4)} - Rs {report.estimatedCost || 0}
+                    </option>
+                  ))}
+                </select>
+              )}
               <div className="grid grid-cols-2 gap-2">
                 <input
                   type="text"
@@ -464,7 +528,7 @@ const BidPage = () => {
                 type="text"
                 value={bidTenderKey}
                 onChange={(e) => setBidTenderKey(e.target.value)}
-                placeholder="Tender key (28.6139_77.2090)"
+                placeholder="Report id from marketplace"
                 className="input font-mono text-xs"
               />
               <input
@@ -482,6 +546,7 @@ const BidPage = () => {
         </div>
 
         {/* Close Tender — full width, different visual */}
+        {currentUser?.role === "admin" && (
         <div className="border border-dashed border-asphalt-700 rounded-xl p-5 mb-10">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <div className="flex-shrink-0">
@@ -489,21 +554,21 @@ const BidPage = () => {
               <p className="text-[10px] text-road font-mono uppercase">Admin only</p>
             </div>
             <div className="flex-1 flex gap-2 w-full sm:w-auto">
-              {openTenders.length > 0 ? (
+              {marketReports.length > 0 ? (
                 <select
                   value={closeTenderKey}
                   onChange={(e) => setCloseTenderKey(e.target.value)}
                   className="input text-sm cursor-pointer flex-1"
                 >
-                  <option value="">Select a tender...</option>
-                  {openTenders.map((t) => (
-                    <option key={t.key} value={t.key}>
-                      {t.key} — {t.baseAmount} wei
+                  <option value="">Select a report...</option>
+                  {marketReports.map((report) => (
+                    <option key={report._id} value={report._id}>
+                      {Number(report.latitude).toFixed(4)}, {Number(report.longitude).toFixed(4)} — Rs {report.estimatedCost || 0}
                     </option>
                   ))}
                 </select>
               ) : (
-                <p className="text-xs text-road py-2">No open tenders available.</p>
+                <p className="text-xs text-road py-2">No reports ready for allocation.</p>
               )}
               <button
                 onClick={handleCloseTender}
@@ -515,6 +580,7 @@ const BidPage = () => {
             </div>
           </div>
         </div>
+        )}
 
         {/* ── Tenders List ── */}
         {(openTenders.length > 0 || closedTenders.length > 0) && (

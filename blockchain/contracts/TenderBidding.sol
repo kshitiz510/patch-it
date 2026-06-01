@@ -2,169 +2,196 @@
 pragma solidity ^0.8.0;
 
 contract TenderBidding {
-
-    struct Bidder {
-        string name; // Bidder's name
-        uint256 amount; // Bidder's bid amount
+    enum ProjectStatus {
+        Reported,
+        OpenForBidding,
+        BidSelected,
+        WorkInProgress,
+        Completed,
+        Verified,
+        PaymentReleased
     }
 
-    struct Tender {
-        string uniqueKey; // Unique key in the format "latitude_longitude"
-        bool isClosed; // If the tender is closed or not
-        address winner; // The winner of the tender
-        uint256 lowestBid; // The lowest bid amount
-        uint256 baseAmount; // Base amount set during tender creation
-        Bidder[] bids; // List of all bids placed for this tender
+    struct Bid {
+        address contractor;
+        uint256 amount;
+        uint256 rankingScore;
+        string metadataURI;
+        bool exists;
     }
 
-    mapping(string => Tender) public tenders;
-    string[] public tenderKeys;
+    struct Project {
+        string reportId;
+        string locationKey;
+        uint256 estimatedCost;
+        ProjectStatus status;
+        address winner;
+        uint256 winningBid;
+        uint256 escrow;
+        address[] bidders;
+        bool exists;
+    }
 
-    mapping(address => string) public bidderNames;
+    address public owner;
     mapping(address => bool) public admins;
+    mapping(address => bool) public contractors;
+    mapping(bytes32 => Project) private projects;
+    mapping(bytes32 => mapping(address => Bid)) private projectBids;
+    bytes32[] private projectKeys;
 
-    mapping(address => string[]) public bidderTenders; // Track tenders a bidder has participated in
+    event ProjectCreated(bytes32 indexed projectKey, string reportId, uint256 estimatedCost);
+    event BidPlaced(bytes32 indexed projectKey, address indexed contractor, uint256 amount, uint256 rankingScore);
+    event WinnerSelected(bytes32 indexed projectKey, address indexed contractor, uint256 amount);
+    event WorkStarted(bytes32 indexed projectKey, address indexed contractor);
+    event WorkCompleted(bytes32 indexed projectKey, address indexed contractor);
+    event CompletionVerified(bytes32 indexed projectKey);
+    event PaymentReleased(bytes32 indexed projectKey, address indexed contractor, uint256 amount);
+
+    modifier onlyOwner() {
+        require(msg.sender == owner, "Only owner");
+        _;
+    }
 
     modifier onlyAdmin() {
-        require(admins[msg.sender], "You are not the admin");
+        require(admins[msg.sender], "Only admin");
         _;
     }
 
-    modifier tenderExists(string memory _key) {
-        require(bytes(tenders[_key].uniqueKey).length != 0, "Tender does not exist");
+    modifier onlyContractor() {
+        require(contractors[msg.sender], "Only contractor");
         _;
     }
 
-    function createAdmin(string memory _name) public {
-        require(bytes(bidderNames[msg.sender]).length == 0, "Admin already exists");
+    modifier projectExists(bytes32 projectKey) {
+        require(projects[projectKey].exists, "Project not found");
+        _;
+    }
+
+    constructor() {
+        owner = msg.sender;
         admins[msg.sender] = true;
-        bidderNames[msg.sender] = _name;
     }
 
-    function registerBidder(string memory _name) public {
-        require(bytes(bidderNames[msg.sender]).length == 0, "Bidder already registered");
-        bidderNames[msg.sender] = _name;
+    function setAdmin(address account, bool enabled) external onlyOwner {
+        admins[account] = enabled;
     }
 
-    function createTender(string memory _latitude, string memory _longitude, uint256 _baseAmount) public onlyAdmin {
-        string memory tenderKey = string(abi.encodePacked(_latitude, "_", _longitude));
-        require(bytes(tenders[tenderKey].uniqueKey).length == 0, "Tender already exists");
-
-        Tender storage newTender = tenders[tenderKey];
-        newTender.uniqueKey = tenderKey;
-        newTender.isClosed = false;
-        newTender.lowestBid = type(uint256).max;
-        newTender.baseAmount = _baseAmount;
-
-        tenderKeys.push(tenderKey);
-        emit TenderCreated(tenderKey, _baseAmount);
+    function registerContractor() external {
+        contractors[msg.sender] = true;
     }
 
-    function placeBid(string memory _tenderKey, uint256 _amount) public tenderExists(_tenderKey) {
-        Tender storage tender = tenders[_tenderKey];
-        require(!tender.isClosed, "Tender is closed");
-        require(bytes(bidderNames[msg.sender]).length > 0, "You must be a registered bidder");
-        require(_amount <= (tender.baseAmount * 110) / 100, "Bid exceeds 110% of base amount");
+    function createProject(string calldata reportId, string calldata locationKey, uint256 estimatedCost)
+        external
+        payable
+        onlyAdmin
+        returns (bytes32)
+    {
+        require(bytes(reportId).length > 0, "Report required");
+        require(estimatedCost > 0, "Estimate required");
+        bytes32 projectKey = keccak256(abi.encodePacked(reportId));
+        require(!projects[projectKey].exists, "Project exists");
 
-        tender.bids.push(Bidder({name: bidderNames[msg.sender], amount: _amount}));
+        Project storage project = projects[projectKey];
+        project.reportId = reportId;
+        project.locationKey = locationKey;
+        project.estimatedCost = estimatedCost;
+        project.status = ProjectStatus.OpenForBidding;
+        project.escrow = msg.value;
+        project.exists = true;
+        projectKeys.push(projectKey);
 
-        sortBids(tender);
-
-        if (_amount < tender.lowestBid) {
-            tender.lowestBid = _amount;
-            tender.winner = msg.sender;
-        }
-
-        // Track the tender for the bidder
-        bool alreadyAdded = false;
-        for (uint256 i = 0; i < bidderTenders[msg.sender].length; i++) {
-            if (keccak256(abi.encodePacked(bidderTenders[msg.sender][i])) == keccak256(abi.encodePacked(_tenderKey))) {
-                alreadyAdded = true;
-                break;
-            }
-        }
-        if (!alreadyAdded) {
-            bidderTenders[msg.sender].push(_tenderKey);
-        }
+        emit ProjectCreated(projectKey, reportId, estimatedCost);
+        return projectKey;
     }
 
-    function sortBids(Tender storage _tender) internal {
-        uint256 length = _tender.bids.length;
-        for (uint256 i = 0; i < length - 1; i++) {
-            for (uint256 j = i + 1; j < length; j++) {
-                if (_tender.bids[i].amount > _tender.bids[j].amount) {
-                    Bidder memory tempBid = _tender.bids[i];
-                    _tender.bids[i] = _tender.bids[j];
-                    _tender.bids[j] = tempBid;
-                }
-            }
-        }
+    function submitBid(bytes32 projectKey, uint256 amount, uint256 rankingScore, string calldata metadataURI)
+        external
+        onlyContractor
+        projectExists(projectKey)
+    {
+        Project storage project = projects[projectKey];
+        require(project.status == ProjectStatus.OpenForBidding, "Bidding closed");
+        require(amount > 0, "Amount required");
+        require(rankingScore <= 100, "Invalid score");
+        require(!projectBids[projectKey][msg.sender].exists, "Bid exists");
+
+        projectBids[projectKey][msg.sender] = Bid({
+            contractor: msg.sender,
+            amount: amount,
+            rankingScore: rankingScore,
+            metadataURI: metadataURI,
+            exists: true
+        });
+        project.bidders.push(msg.sender);
+
+        emit BidPlaced(projectKey, msg.sender, amount, rankingScore);
     }
 
-    function closeTender(string memory _tenderKey) public onlyAdmin tenderExists(_tenderKey) {
-        Tender storage tender = tenders[_tenderKey];
-        require(!tender.isClosed, "Tender is already closed");
+    function selectWinner(bytes32 projectKey, address contractor) external onlyAdmin projectExists(projectKey) {
+        Project storage project = projects[projectKey];
+        require(project.status == ProjectStatus.OpenForBidding, "Invalid status");
+        Bid storage bid = projectBids[projectKey][contractor];
+        require(bid.exists, "Bid not found");
 
-        tender.isClosed = true;
-        emit TenderClosed(_tenderKey, tender.winner, tender.lowestBid);
+        project.winner = contractor;
+        project.winningBid = bid.amount;
+        project.status = ProjectStatus.BidSelected;
+
+        emit WinnerSelected(projectKey, contractor, bid.amount);
     }
 
-    function listOpenTenders() public view returns (string[] memory, uint256[] memory) {
-        uint256 openCount = 0;
-        for (uint256 i = 0; i < tenderKeys.length; i++) {
-            if (!tenders[tenderKeys[i]].isClosed) {
-                openCount++;
-            }
-        }
-
-        string[] memory keys = new string[](openCount);
-        uint256[] memory baseAmounts = new uint256[](openCount);
-
-        uint256 index = 0;
-        for (uint256 i = 0; i < tenderKeys.length; i++) {
-            if (!tenders[tenderKeys[i]].isClosed) {
-                keys[index] = tenderKeys[i];
-                baseAmounts[index] = tenders[tenderKeys[i]].baseAmount;
-                index++;
-            }
-        }
-
-        return (keys, baseAmounts);
+    function markWorkStarted(bytes32 projectKey) external projectExists(projectKey) {
+        Project storage project = projects[projectKey];
+        require(msg.sender == project.winner, "Only winner");
+        require(project.status == ProjectStatus.BidSelected, "Invalid status");
+        project.status = ProjectStatus.WorkInProgress;
+        emit WorkStarted(projectKey, msg.sender);
     }
 
-    function listClosedTenders() public view returns (string[] memory, string[] memory, uint256[] memory) {
-        uint256 closedCount = 0;
-        for (uint256 i = 0; i < tenderKeys.length; i++) {
-            if (tenders[tenderKeys[i]].isClosed) {
-                closedCount++;
-            }
-        }
-
-        string[] memory keys = new string[](closedCount);
-        string[] memory winnerNames = new string[](closedCount);
-        uint256[] memory amounts = new uint256[](closedCount);
-
-        uint256 index = 0;
-        for (uint256 i = 0; i < tenderKeys.length; i++) {
-            if (tenders[tenderKeys[i]].isClosed) {
-                keys[index] = tenderKeys[i];
-                winnerNames[index] = bidderNames[tenders[tenderKeys[i]].winner];
-                amounts[index] = tenders[tenderKeys[i]].lowestBid;
-                index++;
-            }
-        }
-
-        return (keys, winnerNames, amounts);
+    function markCompleted(bytes32 projectKey) external projectExists(projectKey) {
+        Project storage project = projects[projectKey];
+        require(msg.sender == project.winner, "Only winner");
+        require(project.status == ProjectStatus.WorkInProgress, "Invalid status");
+        project.status = ProjectStatus.Completed;
+        emit WorkCompleted(projectKey, msg.sender);
     }
 
-    function getAllTenders() public view returns (string[] memory) {
-        return tenderKeys;
+    function verifyCompletion(bytes32 projectKey) external onlyAdmin projectExists(projectKey) {
+        Project storage project = projects[projectKey];
+        require(project.status == ProjectStatus.Completed, "Invalid status");
+        project.status = ProjectStatus.Verified;
+        emit CompletionVerified(projectKey);
     }
 
-    function getTender(string memory _tenderKey) public view tenderExists(_tenderKey) returns (Tender memory) {
-        return tenders[_tenderKey];
+    function releaseFunds(bytes32 projectKey) external onlyAdmin projectExists(projectKey) {
+        Project storage project = projects[projectKey];
+        require(project.status == ProjectStatus.Verified, "Invalid status");
+        require(project.escrow >= project.winningBid, "Insufficient escrow");
+
+        uint256 amount = project.winningBid;
+        project.escrow -= amount;
+        project.status = ProjectStatus.PaymentReleased;
+
+        (bool ok, ) = payable(project.winner).call{value: amount}("");
+        require(ok, "Payment failed");
+
+        emit PaymentReleased(projectKey, project.winner, amount);
     }
 
-    event TenderCreated(string tenderKey, uint256 baseAmount);
-    event TenderClosed(string tenderKey, address winner, uint256 lowestBid);
+    function getProject(bytes32 projectKey) external view projectExists(projectKey) returns (Project memory) {
+        return projects[projectKey];
+    }
+
+    function getBid(bytes32 projectKey, address contractor) external view returns (Bid memory) {
+        require(projectBids[projectKey][contractor].exists, "Bid not found");
+        return projectBids[projectKey][contractor];
+    }
+
+    function listProjects() external view returns (bytes32[] memory) {
+        return projectKeys;
+    }
+
+    function listBidders(bytes32 projectKey) external view projectExists(projectKey) returns (address[] memory) {
+        return projects[projectKey].bidders;
+    }
 }
