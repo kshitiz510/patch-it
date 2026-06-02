@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { API_URL, api, getStoredAuth } from "../api";
+import { API_URL, api } from "../api";
+import { useAuth } from "../context/AuthContext";
 
 const CommunityPage = () => {
   const [locations, setLocations] = useState([]);
@@ -10,16 +11,15 @@ const CommunityPage = () => {
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("newest");
   const [postBody, setPostBody] = useState("");
-  const [author, setAuthor] = useState("");
   const [commentDrafts, setCommentDrafts] = useState({});
-  const isAuthed = Boolean(getStoredAuth().accessToken);
+  const { user, isAuthenticated } = useAuth();
 
   useEffect(() => {
     const load = async () => {
       try {
         const [locationRes, postRes] = await Promise.all([
           api.get(`/locations`),
-          isAuthed ? api.get(`/community/posts`) : Promise.resolve({ data: [] }),
+          isAuthenticated ? api.get(`/community/posts`) : Promise.resolve({ data: [] }),
         ]);
         setLocations(locationRes.data);
         setPosts(postRes.data);
@@ -32,7 +32,7 @@ const CommunityPage = () => {
       }
     };
     load();
-  }, []);
+  }, [isAuthenticated]);
 
   const filtered = locations
     .filter((loc) => {
@@ -48,13 +48,12 @@ const CommunityPage = () => {
   const createPost = async (e) => {
     e.preventDefault();
     if (!postBody.trim()) return;
-    if (!isAuthed) {
+    if (!isAuthenticated) {
       setError("Please login to post in the community.");
       return;
     }
     try {
       const res = await api.post(`/community/posts`, {
-        author: author.trim() || "Citizen",
         body: postBody.trim(),
       });
       setPosts((current) => [res.data, ...current]);
@@ -79,7 +78,6 @@ const CommunityPage = () => {
     if (!body) return;
     try {
       const res = await api.post(`/community/posts/${id}/comments`, {
-        author: author.trim() || "Citizen",
         body,
       });
       setPosts((current) => current.map((post) => (post._id === id ? res.data : post)));
@@ -102,34 +100,32 @@ const CommunityPage = () => {
           </p>
         </div>
 
-        {!isAuthed && (
+        {!isAuthenticated && (
           <div className="card p-5 mb-8 text-sm text-road-light">
             Login is required for posting, liking, and commenting. Public reports remain visible.
           </div>
         )}
 
         {/* Composer */}
-        <form onSubmit={createPost} className="card p-5 mb-8">
-          <div className="grid sm:grid-cols-[180px_1fr_auto] gap-3">
-            <input
-              value={author}
-              onChange={(e) => setAuthor(e.target.value)}
-              placeholder="Your name"
-              className="input"
-              maxLength={80}
-            />
-            <input
-              value={postBody}
-              onChange={(e) => setPostBody(e.target.value)}
-              placeholder="Share an update, ask a question, or coordinate repair awareness"
-              className="input"
-              maxLength={1000}
-            />
-            <button type="submit" className="btn-primary rounded-xl" disabled={!postBody.trim()}>
-              Post
-            </button>
-          </div>
-        </form>
+        {isAuthenticated && (
+          <form onSubmit={createPost} className="card p-5 mb-8">
+            <div className="grid sm:grid-cols-[180px_1fr_auto] gap-3 items-center">
+              <div className="text-xs text-road-light font-mono truncate">
+                Posting as: <span className="text-warn">{user?.name}</span>
+              </div>
+              <input
+                value={postBody}
+                onChange={(e) => setPostBody(e.target.value)}
+                placeholder="Share an update, ask a question, or coordinate repair awareness"
+                className="input"
+                maxLength={1000}
+              />
+              <button type="submit" className="btn-primary rounded-xl" disabled={!postBody.trim()}>
+                Post
+              </button>
+            </div>
+          </form>
+        )}
 
         {/* Community posts */}
         {!loading && posts.length > 0 && (

@@ -8,10 +8,12 @@ import ReportPage from "./pages/ReportPage";
 import BidPage from "./pages/BidPage";
 import CommunityPage from "./pages/CommunityPage";
 import AuthPage from "./pages/AuthPage";
-import { getStoredAuth } from "./api";
+import ProfilePage from "./pages/ProfilePage";
+import { useAuth } from "./context/AuthContext";
 
 const ProtectedRoute = ({ children }) => {
-  if (!getStoredAuth().accessToken) return <Navigate to="/auth" replace />;
+  const { isAuthenticated } = useAuth();
+  if (!isAuthenticated) return <Navigate to="/auth" replace />;
   return children;
 };
 
@@ -27,6 +29,7 @@ export default function App() {
           <Route path="/bid" element={<ProtectedRoute><BidPage /></ProtectedRoute>} />
           <Route path="/community" element={<ProtectedRoute><CommunityPage /></ProtectedRoute>} />
           <Route path="/auth" element={<AuthPage />} />
+          <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="*" element={
             <div className="min-h-screen flex flex-col items-center justify-center gap-4">
               <h1 className="text-6xl font-display text-warn">404</h1>

@@ -22,6 +22,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+/.runtime-logs
 
 # ========================
 # Build outputs
@@ -44,6 +45,7 @@ Thumbs.db
 *.njsproj
 skills/
 docs/
+AGENTS.md
 
 # ========================
 # Python
@@ -59,14 +61,10 @@ db.sqlite3
 *.pt
 *.zip
 *.mp4
-ml/models/
-ml/data/train/
-ml/data/val/
-ml/data/test/
-ml/data/raw/
-ml/data/processed/
-ml/media/
-checkpoints/
+/ml/models/
+/ml/data
+/ml/media/
+/checkpoints/
 
 # ========================
 # Blockchain build artifacts

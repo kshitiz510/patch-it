@@ -1,8 +1,12 @@
 import React, { useState } from "react";
 import { api, getStoredAuth } from "../api";
 
+const IMAGE_EXTS = ["jpg", "jpeg", "png", "webp"];
+const VIDEO_EXTS = ["mp4", "mov", "avi", "mkv"];
+
 const UploadLocation = ({ onUploaded }) => {
-  const [video, setVideo] = useState(null);
+  const [media, setMedia] = useState(null);       // selected File object
+  const [mediaKind, setMediaKind] = useState(null); // "image" | "video" | null
   const [latitude, setLatitude] = useState("");
   const [longitude, setLongitude] = useState("");
   const [description, setDescription] = useState("");
@@ -10,17 +14,21 @@ const UploadLocation = ({ onUploaded }) => {
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
 
-  const validExts = ["mp4", "mov", "avi", "mkv", "jpg", "jpeg", "png", "webp"];
-
   const handleFile = (file) => {
     if (!file) return;
     const ext = file.name.split(".").pop().toLowerCase();
-    if (validExts.includes(ext)) {
-      setVideo(file);
+    if (IMAGE_EXTS.includes(ext)) {
+      setMedia(file);
+      setMediaKind("image");
+      setMessage("");
+    } else if (VIDEO_EXTS.includes(ext)) {
+      setMedia(file);
+      setMediaKind("video");
       setMessage("");
     } else {
       setMessage("Only video or image files are allowed");
-      setVideo(null);
+      setMedia(null);
+      setMediaKind(null);
     }
   };
 
@@ -38,13 +46,13 @@ const UploadLocation = ({ onUploaded }) => {
       setMessage("Please login before submitting a report");
       return;
     }
-    if (!video || !latitude || !longitude) {
+    if (!media || !latitude || !longitude) {
       setMessage("Please fill coordinates and select a file");
       return;
     }
 
     const formData = new FormData();
-    formData.append("media", video);
+    formData.append("media", media);
     formData.append("lat", latitude);
     formData.append("lng", longitude);
     if (description.trim()) {
@@ -57,7 +65,8 @@ const UploadLocation = ({ onUploaded }) => {
         headers: { "Content-Type": "multipart/form-data" },
       });
       setMessage(response.data.message || "Upload successful!");
-      setVideo(null);
+      setMedia(null);
+      setMediaKind(null);
       setLatitude("");
       setLongitude("");
       setDescription("");
@@ -87,8 +96,23 @@ const UploadLocation = ({ onUploaded }) => {
     }
   };
 
+  const subtitleText =
+    mediaKind === "image"
+      ? "Image selected"
+      : mediaKind === "video"
+        ? "Video selected"
+        : "Video or image evidence";
+
+  const submitLabel =
+    mediaKind === "image"
+      ? "Submit Image Report"
+      : mediaKind === "video"
+        ? "Submit Video Report"
+        : "Select a File to Upload";
+
   return (
     <div>
+      {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="w-10 h-10 rounded-xl bg-warn/10 flex items-center justify-center">
           <svg
@@ -107,7 +131,7 @@ const UploadLocation = ({ onUploaded }) => {
         </div>
         <div>
           <h2 className="text-lg font-semibold text-white">Upload Footage</h2>
-          <p className="text-xs text-road">Video or image evidence</p>
+          <p className="text-xs text-road">{subtitleText}</p>
         </div>
       </div>
 
@@ -125,35 +149,55 @@ const UploadLocation = ({ onUploaded }) => {
           }}
           onDragLeave={() => setDragActive(false)}
           onDrop={handleDrop}
-          onClick={() => document.getElementById("video-input").click()}
+          onClick={() => document.getElementById("media-input").click()}
         >
           <input
-            id="video-input"
+            id="media-input"
             type="file"
             accept="video/*,image/*"
             onChange={handleFileChange}
             className="hidden"
           />
-          {video ? (
+
+          {media ? (
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-warn/10 flex items-center justify-center flex-shrink-0">
-                <svg
-                  className="w-5 h-5 text-warn"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                  />
-                </svg>
+                {mediaKind === "image" ? (
+                  <svg
+                    className="w-5 h-5 text-warn"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-5 h-5 text-warn"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeWidth={2}
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                )}
               </div>
               <div className="text-left min-w-0">
-                <p className="text-sm text-white truncate">{video.name}</p>
-                <p className="text-xs text-road">{(video.size / 1024 / 1024).toFixed(1)} MB</p>
+                <p className="text-sm text-white truncate">{media.name}</p>
+                <p className="text-xs text-road">
+                  {mediaKind === "image" ? "📷 Image" : "🎬 Video"} ·{" "}
+                  {(media.size / 1024 / 1024).toFixed(1)} MB
+                </p>
               </div>
             </div>
           ) : (
@@ -173,8 +217,11 @@ const UploadLocation = ({ onUploaded }) => {
                   />
                 </svg>
               </div>
-              <p className="text-sm text-road-light font-medium">Drop video here</p>
+              <p className="text-sm text-road-light font-medium">Drop image or video here</p>
               <p className="text-xs text-road mt-1">or click to browse files</p>
+              <p className="text-[10px] text-road mt-2 opacity-60">
+                JPG, PNG, WEBP · MP4, MOV, AVI, MKV
+              </p>
             </>
           )}
         </div>
@@ -225,7 +272,7 @@ const UploadLocation = ({ onUploaded }) => {
           className="w-full flex items-center justify-center gap-2 py-2.5 text-xs text-road-light hover:text-warn border border-dashed border-asphalt-700 hover:border-warn/30 rounded-xl transition-all duration-200"
         >
           <svg
-            className="w-4 h-4 mr-2"
+            className="w-4 h-4"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -252,14 +299,16 @@ const UploadLocation = ({ onUploaded }) => {
               Uploading...
             </span>
           ) : (
-            "Upload Video"
+            submitLabel
           )}
         </button>
 
         {/* Message */}
         {message && (
           <p
-            className={`text-xs text-center ${message.toLowerCase().includes("success") ? "text-green-400" : "text-red-400"}`}
+            className={`text-xs text-center ${
+              message.toLowerCase().includes("success") ? "text-green-400" : "text-red-400"
+            }`}
           >
             {message}
           </p>

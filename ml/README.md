@@ -99,6 +99,24 @@ Each `.txt` label file has one line per bounding box:
 
 Format: `class_id center_x center_y width height` (all normalized 0-1).
 
+## Convert and Split the Kaggle Dataset
+
+If your dataset was downloaded in Pascal VOC XML format, convert it into YOLO format and create train/val/test splits with:
+
+```bash
+cd ml
+python scripts/prepare_dataset.py
+```
+
+By default this reads from `ml/data/train/images` and `ml/data/train/labels`, then writes the YOLO dataset to `ml/data/yolo/` with:
+
+- `train/images` and `train/labels`
+- `val/images` and `val/labels`
+- `test/images` and `test/labels`
+- `data.yaml`
+
+The training script will automatically use this prepared dataset when it exists.
+
 If `data.yaml` is missing, `train.py` auto-generates one.
 
 ---

@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
-const navLinks = [
+const staticLinks = [
   { to: "/", label: "Home" },
   { to: "/map", label: "Map" },
   { to: "/report", label: "Report" },
   { to: "/community", label: "Community" },
   { to: "/bid", label: "Bid" },
-  { to: "/auth", label: "Login" },
 ];
 
 const Navbar = () => {
   const location = useLocation();
+  const { isAuthenticated, user } = useAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
@@ -20,6 +21,13 @@ const Navbar = () => {
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
+
+  const links = [
+    ...staticLinks,
+    isAuthenticated
+      ? { to: "/profile", label: user?.name ? user.name.split(" ")[0] : "Profile" }
+      : { to: "/auth", label: "Login" },
+  ];
 
   return (
     <header
@@ -45,7 +53,7 @@ const Navbar = () => {
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1">
-          {navLinks.map(({ to, label }) => {
+          {links.map(({ to, label }) => {
             const isActive = location.pathname === to;
             return (
               <Link
@@ -94,7 +102,7 @@ const Navbar = () => {
         }`}
       >
         <div className="bg-asphalt-950/98 backdrop-blur-md px-6 py-4 space-y-1">
-          {navLinks.map(({ to, label }) => {
+          {links.map(({ to, label }) => {
             const isActive = location.pathname === to;
             return (
               <Link
